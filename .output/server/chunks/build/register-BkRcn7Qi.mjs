@@ -1,0 +1,172 @@
+import { t as components_default } from './components-w1ngZ8PK.mjs';
+import { _ as _plugin_vue_export_helper_default, N as NuxtLink } from '../virtual/entry.mjs';
+import { defineComponent, ref, mergeProps, unref, withCtx, createTextVNode, createVNode, useSSRContext } from 'vue';
+import { ssrRenderAttrs, ssrRenderClass, ssrRenderComponent, ssrInterpolate, ssrRenderAttr, ssrIncludeBooleanAttr, ssrLooseContain } from 'vue/server-renderer';
+import '@iconify/vue';
+import '../_/nitro.mjs';
+import '@prisma/client';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:url';
+import 'jsonwebtoken';
+import '@iconify/utils';
+import 'node:crypto';
+import 'consola';
+import 'node:path';
+import '@iconify/utils/lib/css/icon';
+import 'nostics';
+import 'nostics/formatters/ansi';
+import 'vue-router';
+import '@vue/shared';
+import 'pinia';
+import 'unhead/utils';
+
+//#region app/pages/register.vue?vue&type=script&setup=true&lang.ts
+var register_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineComponent({
+	__name: "register",
+	__ssrInlineRender: true,
+	setup(__props) {
+		const step = ref("form");
+		const nis = ref("");
+		const password = ref("");
+		const confirmPassword = ref("");
+		const studentName = ref("");
+		const nisChecked = ref(false);
+		const nisLoading = ref(false);
+		const nisError = ref("");
+		const loading = ref(false);
+		const errorMsg = ref("");
+		const agreed = ref(false);
+		return (_ctx, _push, _parent, _attrs) => {
+			const _component_Icon = components_default;
+			const _component_NuxtLink = NuxtLink;
+			_push(`<div${ssrRenderAttrs(mergeProps({ class: "register-page" }, _attrs))} data-v-06a16cbe><div class="bg-decor" data-v-06a16cbe><div class="decor-circle decor-circle-1" data-v-06a16cbe></div><div class="decor-circle decor-circle-2" data-v-06a16cbe></div><div class="decor-circle decor-circle-3" data-v-06a16cbe></div></div><div class="${ssrRenderClass([{ "step-done": unref(step) === "done" }, "register-container"])}" data-v-06a16cbe><div class="brand-panel" data-v-06a16cbe><div class="brand-content" data-v-06a16cbe><div class="brand-logo" data-v-06a16cbe><div class="logo-icon" data-v-06a16cbe><span data-v-06a16cbe>E</span></div></div><h1 class="brand-title" data-v-06a16cbe>Eskul<span class="text-[var(--olive-light)]" data-v-06a16cbe>Hub</span></h1><p class="brand-subtitle" data-v-06a16cbe>Bergabung dengan platform manajemen ekskul terpadu</p><div class="brand-steps" data-v-06a16cbe><div class="${ssrRenderClass([{
+				active: unref(step) === "form",
+				done: unref(step) === "done"
+			}, "step-indicator"])}" data-v-06a16cbe><div class="step-number" data-v-06a16cbe>`);
+			if (unref(step) === "done") _push(ssrRenderComponent(_component_Icon, {
+				name: "i-lucide-check",
+				class: "w-4 h-4"
+			}, null, _parent));
+			else _push(`<span data-v-06a16cbe>1</span>`);
+			_push(`</div><div class="step-info" data-v-06a16cbe><span class="step-label" data-v-06a16cbe>Langkah 1</span><span class="step-desc" data-v-06a16cbe>Lengkapi data diri</span></div></div><div class="step-connector" data-v-06a16cbe></div><div class="${ssrRenderClass([{ active: unref(step) === "done" }, "step-indicator"])}" data-v-06a16cbe><div class="step-number" data-v-06a16cbe>`);
+			if (unref(step) === "done") _push(ssrRenderComponent(_component_Icon, {
+				name: "i-lucide-check",
+				class: "w-4 h-4"
+			}, null, _parent));
+			else _push(`<span data-v-06a16cbe>2</span>`);
+			_push(`</div><div class="step-info" data-v-06a16cbe><span class="step-label" data-v-06a16cbe>Langkah 2</span><span class="step-desc" data-v-06a16cbe>Konfirmasi &amp; Selesai</span></div></div></div><div class="brand-testimonial" data-v-06a16cbe><div class="testimonial-quote" data-v-06a16cbe>&quot;</div><p class="testimonial-text" data-v-06a16cbe>Platform yang memudahkan pengelolaan ekskul sekolah secara digital. Sangat membantu!</p><p class="testimonial-author" data-v-06a16cbe>— Admin SMA Negeri 1 Bandung</p></div><div class="brand-footer" data-v-06a16cbe><p class="brand-version" data-v-06a16cbe>v1.0.0 — Prototype</p><p class="brand-copyright" data-v-06a16cbe>© 2026 EskulHub</p></div></div></div><div class="form-panel" data-v-06a16cbe><div class="form-wrapper" data-v-06a16cbe>`);
+			if (unref(step) === "form") {
+				_push(`<!--[--><div class="form-header" data-v-06a16cbe><h2 class="form-title" data-v-06a16cbe>Daftar Akun Baru</h2><p class="form-desc" data-v-06a16cbe>Isi data diri untuk membuat akun</p></div><form class="register-form" data-v-06a16cbe>`);
+				if (unref(errorMsg)) {
+					_push(`<div class="error-badge" data-v-06a16cbe>`);
+					_push(ssrRenderComponent(_component_Icon, {
+						name: "i-lucide-alert-circle",
+						class: "w-4 h-4"
+					}, null, _parent));
+					_push(`<span data-v-06a16cbe>${ssrInterpolate(unref(errorMsg))}</span></div>`);
+				} else _push(`<!---->`);
+				_push(`<div class="input-group" data-v-06a16cbe><label class="input-label" data-v-06a16cbe>NIS</label><div class="input-row-nis" data-v-06a16cbe><div class="input-wrapper flex-1" data-v-06a16cbe>`);
+				_push(ssrRenderComponent(_component_Icon, {
+					name: "i-lucide-id-card",
+					class: "input-icon"
+				}, null, _parent));
+				_push(`<input${ssrRenderAttr("value", unref(nis))} type="text" required class="input-field" placeholder="Masukkan NIS"${ssrIncludeBooleanAttr(unref(nisChecked)) ? " disabled" : ""} data-v-06a16cbe></div>`);
+				if (!unref(nisChecked)) {
+					_push(`<button type="button" class="btn-cek"${ssrIncludeBooleanAttr(unref(nisLoading) || !unref(nis)) ? " disabled" : ""} data-v-06a16cbe>`);
+					if (unref(nisLoading)) _push(`<span class="loading-spinner-sm" data-v-06a16cbe></span>`);
+					else _push(`<span data-v-06a16cbe>Cek NIS</span>`);
+					_push(`</button>`);
+				} else _push(`<button type="button" class="btn-ubah" data-v-06a16cbe> Ubah </button>`);
+				_push(`</div>`);
+				if (unref(nisError)) _push(`<p class="field-error" data-v-06a16cbe>${ssrInterpolate(unref(nisError))}</p>`);
+				else _push(`<!---->`);
+				if (unref(nisChecked)) _push(`<p class="field-success" data-v-06a16cbe>NIS terdaftar atas nama <strong data-v-06a16cbe>${ssrInterpolate(unref(studentName))}</strong></p>`);
+				else _push(`<!---->`);
+				_push(`</div>`);
+				if (unref(nisChecked)) {
+					_push(`<!--[--><div class="input-group" data-v-06a16cbe><label class="input-label" data-v-06a16cbe>Nama Lengkap</label><div class="input-wrapper" data-v-06a16cbe>`);
+					_push(ssrRenderComponent(_component_Icon, {
+						name: "i-lucide-user",
+						class: "input-icon"
+					}, null, _parent));
+					_push(`<input${ssrRenderAttr("value", unref(studentName))} type="text" class="input-field" disabled data-v-06a16cbe></div></div><div class="input-group" data-v-06a16cbe><label class="input-label" data-v-06a16cbe>Password</label><div class="input-wrapper" data-v-06a16cbe>`);
+					_push(ssrRenderComponent(_component_Icon, {
+						name: "i-lucide-lock",
+						class: "input-icon"
+					}, null, _parent));
+					_push(`<input${ssrRenderAttr("value", unref(password))} type="password" required class="input-field" placeholder="Minimal 8 karakter" data-v-06a16cbe></div></div><div class="input-group" data-v-06a16cbe><label class="input-label" data-v-06a16cbe>Konfirmasi Password</label><div class="input-wrapper" data-v-06a16cbe>`);
+					_push(ssrRenderComponent(_component_Icon, {
+						name: "i-lucide-lock",
+						class: "input-icon"
+					}, null, _parent));
+					_push(`<input${ssrRenderAttr("value", unref(confirmPassword))} type="password" required class="input-field" placeholder="Ulangi password" data-v-06a16cbe></div></div><!--]-->`);
+				} else _push(`<!---->`);
+				_push(`<label class="agreement" data-v-06a16cbe><input type="checkbox"${ssrIncludeBooleanAttr(Array.isArray(unref(agreed)) ? ssrLooseContain(unref(agreed), null) : unref(agreed)) ? " checked" : ""} class="agreement-checkbox" data-v-06a16cbe><span class="agreement-text" data-v-06a16cbe> Saya setuju dengan <a href="#" class="agreement-link" data-v-06a16cbe>Syarat &amp; Ketentuan</a> dan <a href="#" class="agreement-link" data-v-06a16cbe>Kebijakan Privasi</a></span></label><button type="submit" class="${ssrRenderClass([{ loading: unref(loading) }, "submit-btn"])}"${ssrIncludeBooleanAttr(unref(loading) || !unref(agreed)) ? " disabled" : ""} data-v-06a16cbe>`);
+				if (!unref(loading)) {
+					_push(`<span class="btn-text" data-v-06a16cbe> Buat Akun `);
+					_push(ssrRenderComponent(_component_Icon, {
+						name: "i-lucide-arrow-right",
+						class: "w-4 h-4"
+					}, null, _parent));
+					_push(`</span>`);
+				} else _push(`<span class="btn-loading" data-v-06a16cbe><span class="loading-spinner" data-v-06a16cbe></span> Memproses... </span>`);
+				_push(`</button></form><p class="form-footer-text" data-v-06a16cbe> Sudah punya akun? `);
+				_push(ssrRenderComponent(_component_NuxtLink, {
+					to: "/login",
+					class: "form-link"
+				}, {
+					default: withCtx((_, _push, _parent, _scopeId) => {
+						if (_push) _push(`Masuk`);
+						else return [createTextVNode("Masuk")];
+					}),
+					_: 1
+				}, _parent));
+				_push(`</p><!--]-->`);
+			} else if (unref(step) === "done") {
+				_push(`<div class="success-wrapper" data-v-06a16cbe><div class="success-icon" data-v-06a16cbe>`);
+				_push(ssrRenderComponent(_component_Icon, {
+					name: "i-lucide-check",
+					class: "w-8 h-8"
+				}, null, _parent));
+				_push(`</div><h2 class="success-title" data-v-06a16cbe>Pendaftaran Berhasil!</h2><p class="success-desc" data-v-06a16cbe> Akun untuk <strong data-v-06a16cbe>${ssrInterpolate(unref(studentName))}</strong> (NIS: ${ssrInterpolate(unref(nis))}) berhasil dibuat. Silakan login menggunakan NIS dan password yang sudah dibuat. </p><div class="success-detail" data-v-06a16cbe><div class="detail-item" data-v-06a16cbe><span class="detail-label" data-v-06a16cbe>Nama</span><span class="detail-value" data-v-06a16cbe>${ssrInterpolate(unref(studentName))}</span></div><div class="detail-item" data-v-06a16cbe><span class="detail-label" data-v-06a16cbe>NIS</span><span class="detail-value" data-v-06a16cbe>${ssrInterpolate(unref(nis))}</span></div><div class="detail-item" data-v-06a16cbe><span class="detail-label" data-v-06a16cbe>Role</span><span class="detail-value" data-v-06a16cbe>Siswa</span></div></div>`);
+				_push(ssrRenderComponent(_component_NuxtLink, {
+					to: "/login",
+					class: "submit-btn success-btn"
+				}, {
+					default: withCtx((_, _push, _parent, _scopeId) => {
+						if (_push) {
+							_push(`<span class="btn-text" data-v-06a16cbe${_scopeId}> Masuk Sekarang `);
+							_push(ssrRenderComponent(_component_Icon, {
+								name: "i-lucide-arrow-right",
+								class: "w-4 h-4"
+							}, null, _parent, _scopeId));
+							_push(`</span>`);
+						} else return [createVNode("span", { class: "btn-text" }, [createTextVNode(" Masuk Sekarang "), createVNode(_component_Icon, {
+							name: "i-lucide-arrow-right",
+							class: "w-4 h-4"
+						})])];
+					}),
+					_: 1
+				}, _parent));
+				_push(`</div>`);
+			} else _push(`<!---->`);
+			_push(`</div></div></div></div>`);
+		};
+	}
+});
+//#endregion
+//#region app/pages/register.vue
+var _sfc_setup = register_vue_vue_type_script_setup_true_lang_default.setup;
+register_vue_vue_type_script_setup_true_lang_default.setup = (props, ctx) => {
+	const ssrContext = useSSRContext();
+	(ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/register.vue");
+	return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+var register_default = /*#__PURE__*/ _plugin_vue_export_helper_default(register_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-06a16cbe"]]);
+
+export { register_default as default };
+//# sourceMappingURL=register-BkRcn7Qi.mjs.map

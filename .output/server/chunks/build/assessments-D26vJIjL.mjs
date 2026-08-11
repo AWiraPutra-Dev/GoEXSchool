@@ -1,0 +1,84 @@
+import { _ as _plugin_vue_export_helper_default } from '../virtual/entry.mjs';
+import { u as useOperatorDataStore } from './operator-data-x3YpqlSN.mjs';
+import { defineComponent, ref, computed, mergeProps, unref, useSSRContext } from 'vue';
+import { ssrRenderAttrs, ssrRenderStyle, ssrRenderList, ssrIncludeBooleanAttr, ssrLooseContain, ssrLooseEqual, ssrInterpolate, ssrRenderAttr, ssrRenderClass } from 'vue/server-renderer';
+import 'nostics';
+import 'nostics/formatters/ansi';
+import '../_/nitro.mjs';
+import '@prisma/client';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:url';
+import 'jsonwebtoken';
+import '@iconify/utils';
+import 'node:crypto';
+import 'consola';
+import 'node:path';
+import 'vue-router';
+import '@vue/shared';
+import '@iconify/vue';
+import 'pinia';
+import 'unhead/utils';
+
+//#region app/pages/admin/assessments.vue?vue&type=script&setup=true&lang.ts
+var assessments_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineComponent({
+	__name: "assessments",
+	__ssrInlineRender: true,
+	setup(__props) {
+		const op = useOperatorDataStore();
+		const selectedEkskul = ref("Semua");
+		const search = ref("");
+		const filtered = computed(() => {
+			let result = op.assessments;
+			if (selectedEkskul.value !== "Semua") result = result.filter((a) => a.ekskul === selectedEkskul.value);
+			if (search.value) result = result.filter((a) => a.student.toLowerCase().includes(search.value.toLowerCase()));
+			return result;
+		});
+		const ekskulList = [
+			"Semua",
+			"Basket",
+			"Paduan Suara",
+			"Robotik",
+			"Pramuka",
+			"KIR",
+			"Seni Tari",
+			"Futsal",
+			"English Club"
+		];
+		return (_ctx, _push, _parent, _attrs) => {
+			_push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-4" }, _attrs))} data-v-bf3ab6e3><h1 class="page-title" data-v-bf3ab6e3>Penilaian</h1><p class="text-[13px]" style="${ssrRenderStyle({ "color": "var(--text-secondary)" })}" data-v-bf3ab6e3>Pantau nilai dan evaluasi kegiatan ekskul</p><div class="table-card" data-v-bf3ab6e3><div class="table-toolbar" data-v-bf3ab6e3><div class="flex gap-3 items-center" data-v-bf3ab6e3><select class="filter-select" data-v-bf3ab6e3><!--[-->`);
+			ssrRenderList(ekskulList, (e) => {
+				_push(`<option data-v-bf3ab6e3${ssrIncludeBooleanAttr(Array.isArray(unref(selectedEkskul)) ? ssrLooseContain(unref(selectedEkskul), null) : ssrLooseEqual(unref(selectedEkskul), null)) ? " selected" : ""}>${ssrInterpolate(e)}</option>`);
+			});
+			_push(`<!--]--></select><input${ssrRenderAttr("value", unref(search))} type="text" placeholder="Cari siswa..." class="search-input" data-v-bf3ab6e3></div><span class="text-[11px]" style="${ssrRenderStyle({ "color": "var(--text-muted)" })}" data-v-bf3ab6e3>${ssrInterpolate(unref(filtered).length)} data</span></div><table class="data-table" data-v-bf3ab6e3><thead data-v-bf3ab6e3><tr data-v-bf3ab6e3><th data-v-bf3ab6e3>Siswa</th><th data-v-bf3ab6e3>Ekskul</th><th data-v-bf3ab6e3>Nilai</th><th data-v-bf3ab6e3>Grade</th><th data-v-bf3ab6e3>Catatan</th><th data-v-bf3ab6e3>Tanggal</th></tr></thead><tbody data-v-bf3ab6e3><!--[-->`);
+			ssrRenderList(unref(filtered), (a) => {
+				_push(`<tr data-v-bf3ab6e3><td class="font-semibold" data-v-bf3ab6e3>${ssrInterpolate(a.student)}</td><td data-v-bf3ab6e3><span class="ekskul-tag" data-v-bf3ab6e3>${ssrInterpolate(a.ekskul)}</span></td><td class="text-center font-bold text-[16px]" style="${ssrRenderStyle({ color: a.score >= 85 ? "var(--teal)" : a.score >= 70 ? "var(--orange)" : "var(--red-orange)" })}" data-v-bf3ab6e3>${ssrInterpolate(a.score)}</td><td data-v-bf3ab6e3><span class="${ssrRenderClass([a.score >= 80 ? "grade-high" : "grade-mid", "grade-badge"])}" data-v-bf3ab6e3>${ssrInterpolate(a.grade)}</span></td><td style="${ssrRenderStyle({
+					"color": "var(--text-secondary)",
+					"font-size": "var(--text-sm)"
+				})}" data-v-bf3ab6e3>${ssrInterpolate(a.notes)}</td><td style="${ssrRenderStyle({
+					"color": "var(--text-muted)",
+					"font-size": "var(--text-sm)"
+				})}" data-v-bf3ab6e3>${ssrInterpolate(a.date)}</td></tr>`);
+			});
+			_push(`<!--]-->`);
+			if (!unref(filtered).length) _push(`<tr data-v-bf3ab6e3><td colspan="6" class="text-center py-8" style="${ssrRenderStyle({ "color": "var(--text-muted)" })}" data-v-bf3ab6e3>Tidak ada data penilaian</td></tr>`);
+			else _push(`<!---->`);
+			_push(`</tbody></table></div><div class="quick-actions-card" data-v-bf3ab6e3><div class="panel-header" data-v-bf3ab6e3>Info</div><div class="quick-links" data-v-bf3ab6e3><span class="info-text" data-v-bf3ab6e3>Halaman ini menampilkan data penilaian. Input nilai dilakukan oleh Operator.</span></div></div></div>`);
+		};
+	}
+});
+//#endregion
+//#region app/pages/admin/assessments.vue
+var _sfc_setup = assessments_vue_vue_type_script_setup_true_lang_default.setup;
+assessments_vue_vue_type_script_setup_true_lang_default.setup = (props, ctx) => {
+	const ssrContext = useSSRContext();
+	(ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/admin/assessments.vue");
+	return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+var assessments_default = /*#__PURE__*/ _plugin_vue_export_helper_default(assessments_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-bf3ab6e3"]]);
+
+export { assessments_default as default };
+//# sourceMappingURL=assessments-D26vJIjL.mjs.map

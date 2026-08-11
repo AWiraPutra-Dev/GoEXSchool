@@ -1,0 +1,77 @@
+import { t as components_default } from './components-w1ngZ8PK.mjs';
+import { _ as _plugin_vue_export_helper_default } from '../virtual/entry.mjs';
+import { u as useSiswaDataStore } from './siswa-data-DPedxD4_.mjs';
+import { defineComponent, mergeProps, unref, useSSRContext } from 'vue';
+import { ssrRenderAttrs, ssrRenderStyle, ssrRenderList, ssrInterpolate, ssrRenderComponent } from 'vue/server-renderer';
+import '@iconify/vue';
+import '../_/nitro.mjs';
+import '@prisma/client';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:url';
+import 'jsonwebtoken';
+import '@iconify/utils';
+import 'node:crypto';
+import 'consola';
+import 'node:path';
+import '@iconify/utils/lib/css/icon';
+import 'nostics';
+import 'nostics/formatters/ansi';
+import 'vue-router';
+import '@vue/shared';
+import 'pinia';
+import 'unhead/utils';
+
+//#region app/pages/admin/feed.vue?vue&type=script&setup=true&lang.ts
+var feed_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineComponent({
+	__name: "feed",
+	__ssrInlineRender: true,
+	setup(__props) {
+		const siswa = useSiswaDataStore();
+		const typeIcons = {
+			announcement: "i-lucide-megaphone",
+			achievement: "i-lucide-award",
+			gallery: "i-lucide-image",
+			poll: "i-lucide-vote",
+			schedule: "i-lucide-calendar"
+		};
+		const typeColors = {
+			announcement: "var(--teal)",
+			achievement: "var(--yellow-cream)",
+			gallery: "var(--green-soft)",
+			poll: "var(--orange)",
+			schedule: "var(--olive-primary)"
+		};
+		return (_ctx, _push, _parent, _attrs) => {
+			const _component_Icon = components_default;
+			_push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-4" }, _attrs))} data-v-79d48003><h1 class="page-title" data-v-79d48003>Feed Komunitas</h1><p class="text-[13px]" style="${ssrRenderStyle({ "color": "var(--text-secondary)" })}" data-v-79d48003>Pantau aktivitas dan interaksi komunitas ekskul</p><div class="feed-list" data-v-79d48003><!--[-->`);
+			ssrRenderList(unref(siswa).feed, (post) => {
+				_push(`<div class="feed-card" data-v-79d48003><div class="feed-header" data-v-79d48003><div class="feed-author-info" data-v-79d48003><div class="feed-avatar" style="${ssrRenderStyle({ background: typeColors[post.type] })}" data-v-79d48003>${ssrInterpolate(post.avatar)}</div><div data-v-79d48003><div class="feed-author" data-v-79d48003>${ssrInterpolate(post.author)}</div><div class="feed-meta" data-v-79d48003>${ssrInterpolate(post.ekskul)} · ${ssrInterpolate(post.date)}</div></div></div><div class="feed-type-badge" style="${ssrRenderStyle({
+					background: typeColors[post.type] + "20",
+					color: typeColors[post.type]
+				})}" data-v-79d48003>`);
+				_push(ssrRenderComponent(_component_Icon, {
+					name: typeIcons[post.type],
+					class: "w-3.5 h-3.5"
+				}, null, _parent));
+				_push(`<span data-v-79d48003>${ssrInterpolate(post.type === "announcement" ? "Pengumuman" : post.type === "achievement" ? "Prestasi" : post.type === "gallery" ? "Galeri" : post.type === "poll" ? "Voting" : "Jadwal")}</span></div></div><h3 class="feed-title" data-v-79d48003>${ssrInterpolate(post.title)}</h3><p class="feed-content" data-v-79d48003>${ssrInterpolate(post.content)}</p><div class="feed-stats" data-v-79d48003><span data-v-79d48003>❤️ ${ssrInterpolate(post.likes)} suka</span><span data-v-79d48003>💬 ${ssrInterpolate(post.comments.length)} komentar</span></div></div>`);
+			});
+			_push(`<!--]--></div></div>`);
+		};
+	}
+});
+//#endregion
+//#region app/pages/admin/feed.vue
+var _sfc_setup = feed_vue_vue_type_script_setup_true_lang_default.setup;
+feed_vue_vue_type_script_setup_true_lang_default.setup = (props, ctx) => {
+	const ssrContext = useSSRContext();
+	(ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/admin/feed.vue");
+	return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+var feed_default = /*#__PURE__*/ _plugin_vue_export_helper_default(feed_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-79d48003"]]);
+
+export { feed_default as default };
+//# sourceMappingURL=feed-DxEGrR26.mjs.map

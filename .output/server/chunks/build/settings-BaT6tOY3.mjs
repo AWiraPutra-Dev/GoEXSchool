@@ -1,0 +1,69 @@
+import { t as components_default } from './components-w1ngZ8PK.mjs';
+import { _ as _plugin_vue_export_helper_default } from '../virtual/entry.mjs';
+import { defineComponent, ref, reactive, mergeProps, unref, useSSRContext } from 'vue';
+import { ssrRenderAttrs, ssrRenderAttr, ssrInterpolate, ssrIncludeBooleanAttr, ssrLooseContain, ssrLooseEqual, ssrRenderComponent } from 'vue/server-renderer';
+import '@iconify/vue';
+import '../_/nitro.mjs';
+import '@prisma/client';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:url';
+import 'jsonwebtoken';
+import '@iconify/utils';
+import 'node:crypto';
+import 'consola';
+import 'node:path';
+import '@iconify/utils/lib/css/icon';
+import 'nostics';
+import 'nostics/formatters/ansi';
+import 'vue-router';
+import '@vue/shared';
+import 'pinia';
+import 'unhead/utils';
+
+//#region app/pages/admin/settings.vue?vue&type=script&setup=true&lang.ts
+var settings_vue_vue_type_script_setup_true_lang_default = /*@__PURE__*/ defineComponent({
+	__name: "settings",
+	__ssrInlineRender: true,
+	setup(__props) {
+		const saved = ref(false);
+		ref(false);
+		ref(false);
+		const form = reactive({
+			name: "",
+			npsn: "",
+			address: "",
+			phone: "",
+			email: "",
+			website: "",
+			headmaster: "",
+			activeYear: "",
+			activeSemester: ""
+		});
+		return (_ctx, _push, _parent, _attrs) => {
+			const _component_Icon = components_default;
+			_push(`<div${ssrRenderAttrs(mergeProps({ class: "space-y-4 max-w-3xl" }, _attrs))} data-v-f5d1c6fe><h1 class="page-title" data-v-f5d1c6fe>Pengaturan Instansi</h1><div class="form-card" data-v-f5d1c6fe><h3 class="form-card-title" data-v-f5d1c6fe>Identitas Sekolah</h3><form class="space-y-4" data-v-f5d1c6fe><div class="form-row" data-v-f5d1c6fe><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Nama Sekolah</label><input${ssrRenderAttr("value", unref(form).name)} class="form-input" data-v-f5d1c6fe></div><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>NPSN</label><input${ssrRenderAttr("value", unref(form).npsn)} class="form-input" data-v-f5d1c6fe></div></div><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Alamat</label><textarea class="form-input" rows="2" data-v-f5d1c6fe>${ssrInterpolate(unref(form).address)}</textarea></div><div class="form-row" data-v-f5d1c6fe><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Telepon</label><input${ssrRenderAttr("value", unref(form).phone)} class="form-input" data-v-f5d1c6fe></div><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Email</label><input${ssrRenderAttr("value", unref(form).email)} class="form-input" data-v-f5d1c6fe></div></div><div class="form-row" data-v-f5d1c6fe><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Website</label><input${ssrRenderAttr("value", unref(form).website)} class="form-input" data-v-f5d1c6fe></div><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Kepala Sekolah</label><input${ssrRenderAttr("value", unref(form).headmaster)} class="form-input" data-v-f5d1c6fe></div></div><hr class="form-divider" data-v-f5d1c6fe><h3 class="form-card-title" data-v-f5d1c6fe>Tahun Ajaran Aktif</h3><div class="form-row" data-v-f5d1c6fe><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Tahun Ajaran</label><select class="form-input" data-v-f5d1c6fe><option data-v-f5d1c6fe${ssrIncludeBooleanAttr(Array.isArray(unref(form).activeYear) ? ssrLooseContain(unref(form).activeYear, null) : ssrLooseEqual(unref(form).activeYear, null)) ? " selected" : ""}>2024/2025</option><option data-v-f5d1c6fe${ssrIncludeBooleanAttr(Array.isArray(unref(form).activeYear) ? ssrLooseContain(unref(form).activeYear, null) : ssrLooseEqual(unref(form).activeYear, null)) ? " selected" : ""}>2025/2026</option><option data-v-f5d1c6fe${ssrIncludeBooleanAttr(Array.isArray(unref(form).activeYear) ? ssrLooseContain(unref(form).activeYear, null) : ssrLooseEqual(unref(form).activeYear, null)) ? " selected" : ""}>2026/2027</option></select></div><div class="form-group" data-v-f5d1c6fe><label data-v-f5d1c6fe>Semester</label><select class="form-input" data-v-f5d1c6fe><option data-v-f5d1c6fe${ssrIncludeBooleanAttr(Array.isArray(unref(form).activeSemester) ? ssrLooseContain(unref(form).activeSemester, null) : ssrLooseEqual(unref(form).activeSemester, null)) ? " selected" : ""}>Ganjil</option><option data-v-f5d1c6fe${ssrIncludeBooleanAttr(Array.isArray(unref(form).activeSemester) ? ssrLooseContain(unref(form).activeSemester, null) : ssrLooseEqual(unref(form).activeSemester, null)) ? " selected" : ""}>Genap</option></select></div></div><div class="form-actions" data-v-f5d1c6fe><button type="submit" class="btn-primary" data-v-f5d1c6fe>`);
+			if (unref(saved)) _push(ssrRenderComponent(_component_Icon, {
+				name: "i-lucide-check",
+				class: "w-4 h-4"
+			}, null, _parent));
+			else _push(`<!---->`);
+			_push(` ${ssrInterpolate(unref(saved) ? "Tersimpan!" : "Simpan Pengaturan")}</button></div></form></div></div>`);
+		};
+	}
+});
+//#endregion
+//#region app/pages/admin/settings.vue
+var _sfc_setup = settings_vue_vue_type_script_setup_true_lang_default.setup;
+settings_vue_vue_type_script_setup_true_lang_default.setup = (props, ctx) => {
+	const ssrContext = useSSRContext();
+	(ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/admin/settings.vue");
+	return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+var settings_default = /*#__PURE__*/ _plugin_vue_export_helper_default(settings_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-f5d1c6fe"]]);
+
+export { settings_default as default };
+//# sourceMappingURL=settings-BaT6tOY3.mjs.map

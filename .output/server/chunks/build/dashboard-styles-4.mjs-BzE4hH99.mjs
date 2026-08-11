@@ -1,5 +1,0 @@
-//#region app/components/AppFooter.vue?vue&type=style&index=0&scoped=d2826f8b&lang.css?inline&used
-var AppFooter_vue_vue_type_style_index_0_scoped_d2826f8b_lang_default = ".app-footer[data-v-d2826f8b]{background:var(--bg-header);border-top:1px solid var(--border-light);height:40px;font-size:var(--text-xs);z-index:100;justify-content:space-between;align-items:center;padding:0 20px;display:flex;position:fixed;bottom:0;left:0;right:0}.app-footer[data-v-d2826f8b],.footer-version[data-v-d2826f8b]{color:var(--text-muted)}";
-
-export { AppFooter_vue_vue_type_style_index_0_scoped_d2826f8b_lang_default as A };
-//# sourceMappingURL=dashboard-styles-4.mjs-BzE4hH99.mjs.map

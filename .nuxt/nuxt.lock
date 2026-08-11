@@ -1,9 +1,0 @@
-{
-  "pid": 20640,
-  "startedAt": 1786339810174,
-  "command": "dev",
-  "cwd": "D:/Project/Nuxt/eskulhub-prototype/eskulhub-prototype",
-  "port": 3000,
-  "hostname": "::1",
-  "url": "http://[::1]:3000"
-}

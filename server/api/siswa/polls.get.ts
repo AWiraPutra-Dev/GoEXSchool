@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     },
     include: {
       options: { select: { id: true, label: true, votesCount: true } },
-      extracurricular: { select: { name: true } },
+      extracurricular: { select: { name: true, logoUrl: true } },
       votes: { where: { userId: auth.userId }, select: { pollOptionId: true } },
     },
     orderBy: [{ active: 'desc' }, { createdAt: 'desc' }],
@@ -26,6 +26,7 @@ export default defineEventHandler(async (event) => {
       votes: o.votesCount,
     })),
     ekskul: p.extracurricular.name,
+    ekskulLogo: p.extracurricular.logoUrl,
     endDate: p.endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
     active: p.active,
     myVote: p.votes[0]?.pollOptionId || null,

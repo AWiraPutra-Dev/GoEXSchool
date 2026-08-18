@@ -1,5 +1,5 @@
 {
-  "name": "eskulhub-prototype",
+  "name": "studentbase-prototype",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,9 +13,12 @@
     "@nuxt/ui": "3.0.0",
     "@pinia/nuxt": "0.7.0",
     "@prisma/client": "^6.19.3",
+    "@types/leaflet": "^1.9.22",
     "bcrypt-ts": "^5.0.1",
     "chart.js": "^4.5.1",
+    "docx": "^9.7.1",
     "jsonwebtoken": "^9.0.3",
+    "leaflet": "^1.9.4",
     "nuxt": "4.5.0",
     "pinia": "2.2.0",
     "prisma": "^6.19.3",
@@ -26,7 +29,10 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.123",
     "@types/node": "^26.1.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.9"
   }
 }

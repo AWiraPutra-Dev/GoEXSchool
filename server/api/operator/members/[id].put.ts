@@ -4,6 +4,8 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
   const member = await prisma.member.findUnique({ where: { id } })
   if (!member) throw createError({ statusCode: 404, message: 'Anggota tidak ditemukan.' })
+  const scope = await getOperatorScope(event)
+  assertScope(scope, member.extracurricularId)
   const updated = await prisma.member.update({
     where: { id },
     data: { status: member.status === 'active' ? 'inactive' : 'active' },

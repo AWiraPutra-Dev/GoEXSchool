@@ -2,11 +2,13 @@ import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string; userId: string }
+  const scope = await getOperatorScope(event)
   const { title, description, fileUrl, fileType, content, extracurricularId } = await readBody(event)
 
   if (!title || !extracurricularId) {
     throw createError({ statusCode: 400, message: 'Judul dan ekskul wajib diisi.' })
   }
+  assertScope(scope, extracurricularId)
 
   if (!fileUrl && !content) {
     throw createError({ statusCode: 400, message: 'Upload file atau isi konten terlebih dahulu.' })

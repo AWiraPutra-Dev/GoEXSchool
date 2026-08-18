@@ -4,43 +4,121 @@ import type { NewsItem } from '~/stores/operator-data'
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
 const op = useOperatorDataStore()
+const ui = useUiStore()
+const admin = useMasterDataStore()
+const { myEkskul, isOperator, isScopedOperator } = useEkskulScope()
+const { confirm } = useConfirm()
 const showModal = ref(false)
 const editMode = ref(false)
-const form = reactive({ id: 0, title: '', content: '', isPublic: false, ekskul: 'Basket', author: '' })
+const form = reactive({ id: '', title: '', content: '', isPublic: false, extracurricularId: '', author: '' })
 
-function openAdd() { editMode.value = false; Object.assign(form, { id: 0, title: '', content: '', isPublic: false, ekskul: 'Basket', author: '' }); showModal.value = true }
+onMounted(() => { op.fetchAll(); admin.fetchReference() })
+
+const { page, paged, totalPages } = usePagination(() => op.news)
+
+// Status tampil di Event Board siswa
+const displayLabels: Record<string, string> = {
+  none: 'Belum diajukan',
+  pending: 'Menunggu persetujuan admin',
+  approved: 'Tampil di Event Board',
+  rejected: 'Ditolak admin',
+}
+const displayClass: Record<string, string> = {
+  none: 'disp-none',
+  pending: 'disp-pending',
+  approved: 'disp-approved',
+  rejected: 'disp-rejected',
+}
+
+function openAdd() {
+  editMode.value = false; Object.assign(form, { id: '', title: '', content: '', isPublic: false, extracurricularId: '', author: '' })
+  // Operator ekskul: berita otomatis untuk ekskul miliknya
+  if (isScopedOperator.value && myEkskul.value) form.extracurricularId = myEkskul.value.id
+  showModal.value = true
+}
 function openEdit(n: NewsItem) { editMode.value = true; Object.assign(form, n); showModal.value = true }
 function save() {
-  if (editMode.value) op.updateNews(form.id, { title: form.title, content: form.content, isPublic: form.isPublic, ekskul: form.ekskul, author: form.author })
-  else op.addNews({ title: form.title, content: form.content, isPublic: form.isPublic, ekskul: form.ekskul, author: form.author, date: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) })
+  if (editMode.value) op.updateNews(form.id, { title: form.title, content: form.content, isPublic: form.isPublic, extracurricularId: form.extracurricularId, author: form.author })
+  else op.addNews({ title: form.title, content: form.content, isPublic: form.isPublic, extracurricularId: form.extracurricularId, author: form.author })
   showModal.value = false
 }
-function removeNews(id: number) { if (confirm('Hapus berita ini?')) op.deleteNews(id) }
+async function removeNews(n: NewsItem) {
+  const ok = await confirm({
+    title: `Hapus berita "${n.title}"?`,
+    message: 'Berita ini akan dihapus permanen.',
+    confirmText: 'Ya, Hapus',
+    danger: true,
+  })
+  if (!ok) return
+  op.deleteNews(n.id)
+}
+
+async function requestDisplay(n: NewsItem) {
+  const ok = await confirm({
+    title: 'Ajukan tampil di Event Board?',
+    message: 'Berita akan dikirim ke admin untuk disetujui. Setelah disetujui, berita tampil berjalan di dashboard siswa.',
+    confirmText: 'Ya, Ajukan',
+  })
+  if (!ok) return
+  await op.requestNewsDisplay(n.id)
+}
+
+async function withdrawDisplay(n: NewsItem) {
+  const ok = await confirm({
+    title: 'Tarik pengajuan tampil?',
+    message: 'Berita tidak lagi menunggu persetujuan admin untuk tampil di Event Board.',
+    confirmText: 'Ya, Tarik',
+  })
+  if (!ok) return
+  await op.withdrawNewsDisplay(n.id)
+}
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h1 class="page-title">Pengumuman & Berita</h1>
+      <h1 class="page-title">{{ ui.t('menu.news') }}</h1>
       <button class="btn-primary" @click="openAdd"><Icon name="i-lucide-plus" class="w-4 h-4" /> Tulis Berita</button>
     </div>
     <div class="news-list">
-      <div v-for="n in op.news" :key="n.id" class="news-card">
+      <div v-for="n in paged" :key="n.id" class="news-card">
         <div class="news-top">
           <div class="news-meta">
-            <span class="news-ekskul">{{ n.ekskul }}</span>
+            <span class="news-ekskul">
+              <img v-if="n.ekskulLogo" :src="n.ekskulLogo" class="ekskul-logo-img" alt="" />
+              {{ n.ekskul }}
+            </span>
             <span class="news-badge" :class="n.isPublic ? 'badge-public' : 'badge-internal'">{{ n.isPublic ? 'Publik' : 'Internal' }}</span>
+            <span v-if="n.displayStatus && n.displayStatus !== 'none'" class="news-badge" :class="displayClass[n.displayStatus] || 'disp-none'">
+              <Icon v-if="n.displayStatus === 'pending'" name="i-lucide-clock" class="w-3 h-3" />
+              <Icon v-else-if="n.displayStatus === 'approved'" name="i-lucide-check-circle" class="w-3 h-3" />
+              <Icon v-else-if="n.displayStatus === 'rejected'" name="i-lucide-x-circle" class="w-3 h-3" />
+              {{ displayLabels[n.displayStatus] }}
+            </span>
           </div>
-          <div class="news-actions">
-            <button @click="openEdit(n)" title="Edit" style="background:none;border:none;cursor:pointer;">✏️</button>
-            <button @click="removeNews(n.id)" title="Hapus" style="background:none;border:none;cursor:pointer;color:var(--text-red);">🗑️</button>
+          <div class="news-actions"><button @click="openEdit(n)" title="Edit" style="background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
+             <button @click="removeNews(n)" title="Hapus" style="background:none;border:none;cursor:pointer;color:var(--text-red);display:inline-flex;align-items:center;"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
+          </div>
+        </div>            <h3 class="news-title"><TranslatedText :text="n.title" /></h3>
+            <p class="news-content"><TranslatedText :text="n.content" /></p>
+        <div class="news-footer">
+          <span>{{ n.author }}</span>
+          <div class="news-footer-right">
+            <button v-if="n.displayStatus === 'none' || n.displayStatus === 'rejected'" class="btn-request" @click="requestDisplay(n)">
+              <Icon name="i-lucide-megaphone" class="w-3.5 h-3.5" /> Ajukan Tampil
+            </button>
+            <button v-else-if="n.displayStatus === 'pending'" class="btn-withdraw" @click="withdrawDisplay(n)">
+              <Icon name="i-lucide-undo-2" class="w-3.5 h-3.5" /> Tarik Pengajuan
+            </button>
+            <span v-else-if="n.displayStatus === 'approved'" class="disp-inline-approved">
+              <Icon name="i-lucide-megaphone" class="w-3.5 h-3.5" /> Sedang tampil
+            </span>
+            <span>{{ n.date }}</span>
           </div>
         </div>
-        <h3 class="news-title">{{ n.title }}</h3>
-        <p class="news-content">{{ n.content }}</p>
-        <div class="news-footer"><span>{{ n.author }}</span><span>{{ n.date }}</span></div>
       </div>
     </div>
+    <PaginationBar v-model:page="page" :total="op.news.length" />
 
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -49,7 +127,12 @@ function removeNews(id: number) { if (confirm('Hapus berita ini?')) op.deleteNew
           <form @submit.prevent="save" class="space-y-3">
             <div class="form-row">
               <div class="form-group"><label>Judul</label><input v-model="form.title" class="form-input" required></div>
-              <div class="form-group"><label>Ekskul</label><select v-model="form.ekskul" class="form-input"><option>Basket</option><option>Paduan Suara</option><option>Robotik</option><option>Pramuka</option><option>KIR</option><option>Seni Tari</option><option>Futsal</option><option>English Club</option></select></div>
+              <div class="form-group">
+                <label>Ekskul</label>
+                <select v-if="!isOperator" v-model="form.extracurricularId" class="form-input" required><option disabled value="">Pilih Ekskul</option><option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option></select>
+                <div v-else-if="myEkskul" class="scope-badge"><Icon name="i-lucide-shield" class="w-4 h-4" /> {{ myEkskul.name }}</div>
+                <div v-else class="scope-warning"><Icon name="i-lucide-alert-circle" class="w-4 h-4" /> Akun belum diikat ke ekskul. Hubungi admin.</div>
+              </div>
             </div>
             <div class="form-group"><label>Konten</label><textarea v-model="form.content" class="form-input" rows="4" required></textarea></div>
             <div class="form-row">
@@ -73,10 +156,21 @@ function removeNews(id: number) { if (confirm('Hapus berita ini?')) op.deleteNew
 .news-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 16px 20px; }
 .news-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .news-meta { display: flex; align-items: center; gap: 8px; }
-.news-ekskul { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
-.news-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
+.news-ekskul { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.ekskul-logo-img { width: 16px; height: 16px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
+.news-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); display: inline-flex; align-items: center; gap: 4px; }
 .badge-public { background: rgba(74,158,158,0.15); color: var(--teal); }
 .badge-internal { background: rgba(212,192,137,0.2); color: var(--orange); }
+.disp-none { background: var(--bg-hover); color: var(--text-muted); }
+.disp-pending { background: rgba(245,158,11,0.15); color: #b45309; }
+.disp-approved { background: rgba(16,185,129,0.15); color: #047857; }
+.disp-rejected { background: rgba(239,68,68,0.12); color: var(--red-orange); }
+.news-footer-right { display: flex; align-items: center; gap: 10px; }
+.btn-request { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--olive-primary); background: var(--olive-bg); color: var(--olive-primary); font-weight: var(--font-semibold); cursor: pointer; transition: all 0.2s; font-family: var(--font-family); }
+.btn-request:hover { background: var(--olive-primary); color: white; }
+.btn-withdraw { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border-medium); background: var(--bg-card); color: var(--text-secondary); font-weight: var(--font-medium); cursor: pointer; transition: all 0.2s; font-family: var(--font-family); }
+.btn-withdraw:hover { background: var(--bg-hover); color: var(--text-primary); }
+.disp-inline-approved { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #047857; font-weight: var(--font-semibold); }
 .news-title { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 6px; }
 .news-content { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
 .news-footer { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
@@ -88,5 +182,7 @@ function removeNews(id: number) { if (confirm('Hapus berita ini?')) op.deleteNew
 .form-group label { display: block; font-size: var(--text-sm); font-weight: var(--font-medium); margin-bottom: 4px; color: var(--text-primary); }
 .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: var(--text-sm); color: var(--text-primary); }
 .form-input:focus { outline: none; border-color: var(--olive-primary); }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 </style>

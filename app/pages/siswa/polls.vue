@@ -2,6 +2,8 @@
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
 const siswa = useSiswaDataStore()
+const ui = useUiStore()
+onMounted(() => siswa.fetchAll())
 
 const selectedVote = ref<Record<string, string>>({})
 const showResult = ref<Record<string, boolean>>({})
@@ -26,12 +28,14 @@ const filteredPolls = computed(() => {
   if (filter.value === 'active') return siswa.polls.filter(p => p.active)
   return siswa.polls.filter(p => !p.active)
 })
+
+const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h1 class="page-title">Voting</h1>
+      <h1 class="page-title">{{ ui.t('menu.polls') }}</h1>
       <div class="flex gap-2">
         <button class="filter-btn" :class="{ active: filter === 'all' }" @click="filter = 'all'">Semua</button>
         <button class="filter-btn" :class="{ active: filter === 'active' }" @click="filter = 'active'">Aktif</button>
@@ -40,15 +44,19 @@ const filteredPolls = computed(() => {
     </div>
 
     <div class="polls-list">
-      <div v-for="poll in filteredPolls" :key="poll.id" class="poll-card" :class="{ 'poll-voted': poll.myVote }">
+      <div v-for="poll in paged" :key="poll.id" class="poll-card" :class="{ 'poll-voted': poll.myVote }">
         <div class="poll-header">
           <div class="flex items-center gap-2">
-            <span class="poll-ekskul-badge">{{ poll.ekskul }}</span>
+            <span v-if="poll.ekskulLogo" class="ekskul-logo-chip">
+              <img :src="poll.ekskulLogo" class="ekskul-logo-img" alt="" />
+              <span class="poll-ekskul-badge">{{ poll.ekskul }}</span>
+            </span>
+            <span v-else class="poll-ekskul-badge">{{ poll.ekskul }}</span>
             <span class="poll-status-badge" :class="poll.active ? 'badge-active' : 'badge-done'">{{ poll.active ? 'Berlangsung' : 'Selesai' }}</span>
           </div>
           <span class="poll-date">Berakhir {{ poll.endDate }}</span>
         </div>
-        <h3 class="poll-question">{{ poll.question }}</h3>
+        <h3 class="poll-question"><TranslatedText :text="poll.question" /></h3>
 
         <div class="poll-options" v-if="poll.active && !poll.myVote">
           <label v-for="opt in poll.options" :key="opt.id" class="poll-option" :class="{ selected: selectedVote[poll.id] === opt.id }">
@@ -88,6 +96,8 @@ const filteredPolls = computed(() => {
       <Icon name="i-lucide-vote" class="w-12 h-12 mb-3" style="color: var(--text-muted);" />
       <p style="color: var(--text-muted); font-size: var(--text-sm);">Belum ada voting.</p>
     </div>
+
+    <PaginationBar v-model:page="page" :total="filteredPolls.length" />
   </div>
 </template>
 
@@ -102,6 +112,8 @@ const filteredPolls = computed(() => {
 .poll-voted { border-left: 3px solid var(--olive-primary); }
 .poll-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
 .poll-ekskul-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.ekskul-logo-chip { display: inline-flex; align-items: center; gap: 6px; }
+.ekskul-logo-img { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
 .poll-status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
 .badge-active { background: rgba(74,158,158,0.15); color: var(--teal); }
 .badge-done { background: rgba(212,106,90,0.15); color: var(--red-orange); }

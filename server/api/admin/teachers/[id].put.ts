@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const { nip, name, subject, phone } = await readBody(event)
 
   const teacher = await prisma.teacher.findFirst({ where: { id, institutionId: auth.institutionId } })
-  if (!teacher) throw createError({ statusCode: 404, message: 'Guru tidak ditemukan.' })
+  if (!teacher) throw createError({ statusCode: 404, message: 'Pembimbing tidak ditemukan.' })
 
   return prisma.teacher.update({ where: { id }, data: { nip, name, subject, phone } })
 })

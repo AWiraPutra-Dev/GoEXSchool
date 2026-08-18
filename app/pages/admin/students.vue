@@ -3,7 +3,9 @@ import type { Student } from '~/stores/master-data'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
+const ui = useUiStore()
 const store = useMasterDataStore()
+const { confirm } = useConfirm()
 const search = ref('')
 const showModal = ref(false)
 const editMode = ref(false)
@@ -21,6 +23,8 @@ const filtered = computed(() =>
     s.class.toLowerCase().includes(search.value.toLowerCase())
   )
 )
+
+const { page, paged, totalPages } = usePagination(() => filtered.value)
 
 function openAdd() {
   editMode.value = false
@@ -48,8 +52,15 @@ async function save() {
   }
 }
 
-async function removeStudent(id: string) {
-  if (confirm('Hapus siswa ini?')) await store.deleteStudent(id)
+async function removeStudent(s: Student) {
+  const ok = await confirm({
+    title: `Hapus siswa "${s.name}"?`,
+    message: 'Data siswa, keanggotaan ekskul, dan riwayatnya akan ikut terhapus.',
+    confirmText: 'Ya, Hapus',
+    danger: true,
+  })
+  if (!ok) return
+  await store.deleteStudent(s.id)
 }
 
 function downloadTemplate() {
@@ -91,7 +102,7 @@ async function handleFileImport() {
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h1 class="page-title">Data Siswa</h1>
+      <h1 class="page-title">{{ ui.t('menu.students') }}</h1>
       <div class="flex gap-2">
         <button class="btn-outline" @click="downloadTemplate">
           <Icon name="i-lucide-download" class="w-4 h-4" />
@@ -121,7 +132,7 @@ async function handleFileImport() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="s in filtered" :key="s.id">
+          <tr v-for="s in paged" :key="s.id">
             <td><span class="nis-code">{{ s.nis }}</span></td>
             <td class="font-semibold">{{ s.name }}</td>
             <td>{{ s.class }}</td>
@@ -133,8 +144,8 @@ async function handleFileImport() {
               </span>
             </td>
             <td class="text-right action-cell">
-              <button class="action-btn" @click="openEdit(s)" title="Edit">✏️</button>
-              <button class="action-btn" @click="removeStudent(s.id)" title="Hapus" style="color: var(--text-red);">🗑️</button>
+              <button class="action-btn" @click="openEdit(s)" title="Edit"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
+              <button class="action-btn" @click="removeStudent(s)" title="Hapus" style="color: var(--text-red);"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
             </td>
           </tr>
           <tr v-if="!filtered.length">
@@ -142,6 +153,7 @@ async function handleFileImport() {
           </tr>
         </tbody>
       </table>
+      <PaginationBar v-model:page="page" :total="filtered.length" />
     </div>
 
     <Teleport to="body">
@@ -201,12 +213,12 @@ async function handleFileImport() {
 .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .data-table th { text-align: left; padding: 10px 16px; font-weight: var(--font-semibold); background: var(--bg-main); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.3px; }
 .data-table td { padding: 10px 16px; border-top: 1px solid var(--border-light); }
-.nis-code { font-family: 'Courier New', monospace; font-size: var(--text-xs); color: var(--text-secondary); }
+.nis-code { font-size: var(--text-xs); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; font-weight: var(--font-medium); color: var(--text-secondary); }
 .status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
 .status-active { background: rgba(74, 158, 158, 0.15); color: var(--teal); }
 .status-pending { background: rgba(212, 192, 137, 0.2); color: var(--orange); }
 .action-cell { display: flex; gap: 4px; justify-content: flex-end; }
-.action-btn { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; transition: background 0.2s; }
+.action-btn { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .action-btn:hover { background: var(--bg-hover); }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; }

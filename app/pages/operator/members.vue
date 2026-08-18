@@ -1,8 +1,12 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
+const ui = useUiStore()
 const op = useOperatorDataStore()
 const admin = useMasterDataStore()
+const { myEkskul, isOperator, isScopedOperator } = useEkskulScope()
+const { confirm } = useConfirm()
+onMounted(() => { op.fetchAll(); admin.fetchReference() })
 const selectedEkskul = ref('Semua')
 const search = ref('')
 const showModal = ref(false)
@@ -15,22 +19,42 @@ const filtered = computed(() => {
   return result
 })
 
+const { page, paged, totalPages } = usePagination(() => filtered.value)
+
 const ekskulOptions = computed(() => {
   const names = [...new Set(op.members.map(m => m.ekskul))]
   return ['Semua', ...names]
 })
 
+function openModal() {
+  form.studentId = ''; form.extracurricularId = ''
+  // Operator ekskul: anggota otomatis masuk ke ekskul miliknya
+  if (isScopedOperator.value && myEkskul.value) form.extracurricularId = myEkskul.value.id
+  showModal.value = true
+}
+
 function addMember() {
   op.addMember({ studentId: form.studentId, extracurricularId: form.extracurricularId })
   showModal.value = false; form.studentId = ''; form.extracurricularId = ''
+}
+
+async function removeMember(m: any) {
+  const ok = await confirm({
+    title: `Keluarkan ${m.name} dari ${m.ekskul}?`,
+    message: 'Anggota akan dikeluarkan dari ekskul ini. Riwayat kehadirannya tetap tersimpan.',
+    confirmText: 'Ya, Keluarkan',
+    danger: true,
+  })
+  if (!ok) return
+  op.deleteMember(m.id)
 }
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <h1 class="page-title">Anggota Ekskul</h1>
-      <button class="btn-primary" @click="showModal = true"><Icon name="i-lucide-plus" class="w-4 h-4" /> Tambah Anggota</button>
+      <h1 class="page-title">{{ ui.t('menu.members') }}</h1>
+      <button class="btn-primary" @click="openModal"><Icon name="i-lucide-plus" class="w-4 h-4" /> Tambah Anggota</button>
     </div>
     <div class="table-card">
       <div class="table-toolbar">
@@ -44,7 +68,7 @@ function addMember() {
       <table class="data-table">
         <thead><tr><th>Nama</th><th>Kelas</th><th>Ekskul</th><th>Bergabung</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
         <tbody>
-          <tr v-for="m in filtered" :key="m.id">
+          <tr v-for="m in paged" :key="m.id">
             <td class="font-semibold">{{ m.name }}</td><td>{{ m.class }}</td>
             <td><span class="ekskul-tag">{{ m.ekskul }}</span></td>
             <td style="color: var(--text-secondary);">{{ m.joinDate }}</td>
@@ -53,10 +77,11 @@ function addMember() {
                 {{ m.status === 'active' ? 'Aktif' : 'Nonaktif' }}
               </span>
             </td>
-            <td class="text-right"><button class="delete-btn" @click="confirm('Keluarkan anggota ini?') && op.deleteMember(m.id)" title="Hapus">🗑️</button></td>
+            <td class="text-right"><button class="delete-btn" @click="removeMember(m)" title="Hapus"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button></td>
           </tr>
         </tbody>
       </table>
+      <PaginationBar v-model:page="page" :total="filtered.length" />
     </div>
 
     <Teleport to="body">
@@ -65,7 +90,12 @@ function addMember() {
           <h3 class="modal-title">Tambah Anggota Baru</h3>
           <form @submit.prevent="addMember" class="space-y-3">
             <div class="form-group"><label>Siswa</label><select v-model="form.studentId" class="form-input" required><option disabled value="">Pilih Siswa</option><option v-for="s in admin.students" :key="s.id" :value="s.id">{{ s.name }} ({{ s.nis }} - {{ s.class }})</option></select></div>
-            <div class="form-group"><label>Ekskul</label><select v-model="form.extracurricularId" class="form-input" required><option disabled value="">Pilih Ekskul</option><option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option></select></div>
+            <div class="form-group">
+              <label>Ekskul</label>
+              <select v-if="!isOperator" v-model="form.extracurricularId" class="form-input" required><option disabled value="">Pilih Ekskul</option><option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option></select>
+              <div v-else-if="myEkskul" class="scope-badge"><Icon name="i-lucide-shield" class="w-4 h-4" /> {{ myEkskul.name }}</div>
+              <div v-else class="scope-warning"><Icon name="i-lucide-alert-circle" class="w-4 h-4" /> Akun belum diikat ke ekskul. Hubungi admin.</div>
+            </div>
             <div class="modal-actions"><button type="button" class="btn-cancel" @click="showModal = false">Batal</button><button type="submit" class="btn-primary">Tambah</button></div>
           </form>
         </div>
@@ -91,7 +121,7 @@ function addMember() {
 .status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
 .status-active { background: rgba(74,158,158,0.15); color: var(--teal); }
 .status-inactive { background: rgba(212,106,90,0.15); color: var(--red-orange); }
-.delete-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 8px; opacity: 0.5; transition: opacity 0.2s; }
+.delete-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 8px; opacity: 0.5; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .delete-btn:hover { opacity: 1; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; }
@@ -100,6 +130,8 @@ function addMember() {
 .form-group label { display: block; font-size: var(--text-sm); font-weight: var(--font-medium); margin-bottom: 4px; color: var(--text-primary); }
 .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: var(--text-sm); color: var(--text-primary); }
 .form-input:focus { outline: none; border-color: var(--olive-primary); }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 .text-right { text-align: right; }
 </style>

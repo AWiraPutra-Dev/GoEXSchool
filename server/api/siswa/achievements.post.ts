@@ -17,7 +17,10 @@ export default defineEventHandler(async (event) => {
       studentId: auth.studentId,
       extracurricularId,
     },
-    include: { extracurricular: { select: { name: true } } },
+    include: {
+      extracurricular: { select: { name: true } },
+      student: { select: { name: true, class: true } },
+    },
   })
   return {
     id: achievement.id,
@@ -29,5 +32,7 @@ export default defineEventHandler(async (event) => {
     ekskulId: achievement.extracurricularId,
     level: achievement.level,
     proof: achievement.proofUrl,
+    studentName: achievement.student.name,
+    studentClass: achievement.student.class,
   }
 })

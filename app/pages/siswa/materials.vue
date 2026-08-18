@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
+const ui = useUiStore()
 const siswa = useSiswaDataStore()
 const selectedEkskul = ref('all')
 const expandedContent = ref<string | null>(null)
@@ -16,6 +17,8 @@ const filteredMaterials = computed(() => {
   if (selectedEkskul.value === 'all') return siswa.materials
   return siswa.materials.filter((m: any) => m.ekskul === selectedEkskul.value)
 })
+
+const { page, paged, totalPages } = usePagination(() => filteredMaterials.value)
 
 const fileTypeIcons: Record<string, string> = {
   pdf: 'i-lucide-file-text',
@@ -43,7 +46,7 @@ function toggleContent(id: string) {
 <template>
   <div class="space-y-4">
     <div>
-      <h1 class="page-title">Materi Pembelajaran</h1>
+      <h1 class="page-title">{{ ui.t('menu.materials') }}</h1>
       <p class="text-[13px]" style="color: var(--text-secondary);">Materi dari ekstrakurikuler yang kamu ikuti</p>
     </div>
 
@@ -58,7 +61,7 @@ function toggleContent(id: string) {
 
     <!-- Materials List -->
     <div class="materials-list">
-      <div v-for="m in filteredMaterials" :key="m.id" class="material-card" @click="toggleContent(m.id)">
+      <div v-for="m in paged" :key="m.id" class="material-card" @click="toggleContent(m.id)">
         <div class="material-main">
           <div class="material-icon" :style="{ background: fileTypeColors[m.fileType || 'link'] + '20', color: fileTypeColors[m.fileType || 'link'] }">
             <Icon :name="fileTypeIcons[m.fileType || 'link'] || 'i-lucide-file'" class="w-6 h-6" />
@@ -91,6 +94,8 @@ function toggleContent(id: string) {
       <Icon name="i-lucide-folder-open" class="w-12 h-12 mb-3" style="color: var(--text-muted);" />
       <p style="color: var(--text-muted);">Belum ada materi dari ekskul yang kamu ikuti.</p>
     </div>
+
+    <PaginationBar v-model:page="page" :total="filteredMaterials.length" />
   </div>
 </template>
 

@@ -1,10 +1,12 @@
 import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
+  const scope = await getOperatorScope(event)
   const { studentId, extracurricularId } = await readBody(event)
   if (!studentId || !extracurricularId) {
     throw createError({ statusCode: 400, message: 'Siswa dan ekskul wajib diisi.' })
   }
+  assertScope(scope, extracurricularId)
   const existing = await prisma.member.findUnique({
     where: { studentId_extracurricularId: { studentId, extracurricularId } },
   })

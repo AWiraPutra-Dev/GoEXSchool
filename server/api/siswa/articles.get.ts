@@ -15,6 +15,8 @@ export default defineEventHandler(async (event) => {
       tags: true,
       createdAt: true,
       author: { select: { name: true } },
+      extracurricular: { select: { name: true, logoUrl: true } },
+      _count: { select: { views: true } },
     },
   })
   return articles.map(a => ({
@@ -26,6 +28,9 @@ export default defineEventHandler(async (event) => {
     category: a.category,
     tags: a.tags,
     author: a.author.name,
+    ekskul: a.extracurricular?.name ?? null,
+    ekskulLogo: a.extracurricular?.logoUrl ?? null,
+    viewCount: a._count.views,
     createdAt: a.createdAt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
   }))
 })

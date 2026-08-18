@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420">
+  <rect width="640" height="420" fill="#DCFCE7"/>
+  <circle cx="570" cy="80" r="130" fill="#BBF7D0" opacity="0.5"/>
+  <circle cx="60" cy="360" r="110" fill="#BBF7D0" opacity="0.4"/>
+  <g transform="translate(320 200)">
+    <circle cx="-55" cy="-40" r="55" fill="#22C55E"/>
+    <circle cx="55" cy="-40" r="55" fill="#16A34A"/>
+    <path d="M-105 70 C-105 10 -15 0 -55 -10 Z" fill="#22C55E"/>
+    <path d="M105 70 C105 10 15 0 55 -10 Z" fill="#16A34A"/>
+    <rect x="-60" y="45" width="120" height="34" rx="6" fill="#15803D"/>
+  </g>
+  <text x="320" y="372" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="600" fill="#166534">Foto Partisipasi</text>
+</svg>

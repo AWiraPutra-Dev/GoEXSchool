@@ -3,10 +3,13 @@ import type { Achievement } from '~/stores/siswa-data'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
+const ui = useUiStore()
 const siswa = useSiswaDataStore()
 const showModal = ref(false)
 const editMode = ref(false)
 const admin = useMasterDataStore()
+const { confirm } = useConfirm()
+onMounted(() => { siswa.fetchAchievements(); admin.fetchReference() })
 const saved = ref(false)
 const form = reactive({ id: '', title: '', description: '', date: '', type: 'juara' as Achievement['type'], extracurricularId: '', level: 'sekolah' as Achievement['level'], proof: '' })
 const filterType = ref<string>('all')
@@ -18,6 +21,8 @@ const filteredAchievements = computed(() => {
   if (filterLevel.value !== 'all') result = result.filter(a => a.level === filterLevel.value)
   return result
 })
+
+const { page, paged, totalPages } = usePagination(() => filteredAchievements.value)
 
 const stats = computed(() => ({
   total: siswa.achievements.length,
@@ -45,9 +50,18 @@ function save() {
   setTimeout(() => { saved.value = false; showModal.value = false }, 800)
 }
 
-function removeAchievement(id: string) { if (confirm('Hapus prestasi ini?')) siswa.deleteAchievement(id) }
+async function removeAchievement(a: Achievement) {
+  const ok = await confirm({
+    title: `Hapus prestasi "${a.title}"?`,
+    message: 'Prestasi ini akan dihapus permanen dari portofolio Anda.',
+    confirmText: 'Ya, Hapus',
+    danger: true,
+  })
+  if (!ok) return
+  siswa.deleteAchievement(a.id)
+}
 
-const typeLabels: Record<string, string> = { juara: '🥇 Juara', sertifikat: '📜 Sertifikat', partisipasi: '🤝 Partisipasi', organisasi: '👥 Organisasi' }
+const typeLabels: Record<string, string> = { juara: 'Juara', sertifikat: 'Sertifikat', partisipasi: 'Partisipasi', organisasi: 'Organisasi' }
 const levelColors: Record<string, string> = { sekolah: 'var(--teal)', kecamatan: 'var(--teal-mid)', kota: 'var(--yellow-cream)', provinsi: 'var(--orange)', nasional: 'var(--red-orange)' }
 const levelLabels: Record<string, string> = { sekolah: 'Sekolah', kecamatan: 'Kecamatan', kota: 'Kota', provinsi: 'Provinsi', nasional: 'Nasional' }
 const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', sertifikat: 'var(--teal)', partisipasi: 'var(--green-soft)', organisasi: 'var(--olive-primary)' }
@@ -57,7 +71,7 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="page-title">Portofolio Prestasi</h1>
+        <h1 class="page-title">{{ ui.t('menu.achievements') }}</h1>
         <p class="text-[13px]" style="color: var(--text-secondary);">Kumpulan pencapaian dan prestasi selama mengikuti ekskul</p>
       </div>
       <button class="btn-primary" @click="openAdd"><Icon name="i-lucide-plus" class="w-4 h-4" /> Tambah Prestasi</button>
@@ -73,7 +87,7 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
     <div class="filter-bar">
       <div class="filter-group">
         <span class="filter-label">Jenis:</span>
-        <button v-for="opt in [['all', 'Semua'], ['juara', '🏆 Juara'], ['sertifikat', '📜 Sertifikat'], ['partisipasi', '🤝 Partisipasi']]" :key="opt[0]" class="filter-chip" :class="{ active: filterType === opt[0] }" @click="filterType = opt[0]">{{ opt[1] }}</button>
+        <button v-for="opt in [['all', 'Semua'], ['juara', 'Juara'], ['sertifikat', 'Sertifikat'], ['partisipasi', 'Partisipasi']]" :key="opt[0]" class="filter-chip" :class="{ active: filterType === opt[0] }" @click="filterType = opt[0]">{{ opt[1] }}</button>
       </div>
       <div class="filter-group">
         <span class="filter-label">Tingkat:</span>
@@ -82,7 +96,7 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
     </div>
 
     <div class="achievements-grid">
-      <div v-for="a in filteredAchievements" :key="a.id" class="achievement-card">
+      <div v-for="a in paged" :key="a.id" class="achievement-card">
         <div class="ach-top">
           <div class="ach-icon-wrapper" :style="{ background: typeColors[a.type] + '20', color: typeColors[a.type] }">
             <Icon :name="a.type === 'juara' ? 'i-lucide-trophy' : a.type === 'sertifikat' ? 'i-lucide-award' : a.type === 'partisipasi' ? 'i-lucide-handshake' : 'i-lucide-users'" class="w-6 h-6" />
@@ -98,14 +112,16 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
           <span class="ach-ekskul">{{ a.ekskul }}</span>
           <span class="ach-date">{{ a.date }}</span>
           <div class="ach-actions">
-            <button @click="openEdit(a)" title="Edit" class="ach-action-btn">✏️</button>
-            <button @click="removeAchievement(a.id)" title="Hapus" class="ach-action-btn" style="color: var(--text-red);">🗑️</button>
+            <button @click="openEdit(a)" title="Edit" class="ach-action-btn"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
+            <button @click="removeAchievement(a)" title="Hapus" class="ach-action-btn" style="color: var(--text-red);"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
           </div>
         </div>
       </div>
     </div>
 
     <div v-if="!filteredAchievements.length" class="empty-state">Tidak ada prestasi ditemukan.</div>
+
+    <PaginationBar v-model:page="page" :total="filteredAchievements.length" />
 
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
@@ -119,7 +135,7 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
               <div class="form-group"><label>Ekskul</label><select v-model="form.extracurricularId" class="form-input" required><option disabled value="">Pilih Ekskul</option><option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option></select></div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label>Jenis</label><select v-model="form.type" class="form-input"><option value="juara">🏆 Juara</option><option value="sertifikat">📜 Sertifikat</option><option value="partisipasi">🤝 Partisipasi</option><option value="organisasi">👥 Organisasi</option></select></div>
+              <div class="form-group"><label>Jenis</label><select v-model="form.type" class="form-input"><option value="juara">Juara</option><option value="sertifikat">Sertifikat</option><option value="partisipasi">Partisipasi</option><option value="organisasi">Organisasi</option></select></div>
               <div class="form-group"><label>Tingkat</label><select v-model="form.level" class="form-input"><option value="sekolah">Sekolah</option><option value="kecamatan">Kecamatan</option><option value="kota">Kota</option><option value="provinsi">Provinsi</option><option value="nasional">Nasional</option></select></div>
             </div>
             <div class="modal-actions">
@@ -167,7 +183,7 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
 .ach-ekskul { font-weight: var(--font-semibold); color: var(--olive-primary); }
 .ach-date { margin-left: auto; }
 .ach-actions { display: flex; gap: 4px; }
-.ach-action-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; transition: background 0.2s; }
+.ach-action-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .ach-action-btn:hover { background: var(--bg-hover); }
 .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: var(--text-sm); background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 8px; }
 

@@ -1,6 +1,7 @@
 import { prisma } from '~~/server/utils/prisma'
 import { generateToken } from '~~/server/utils/jwt'
 import { compare } from 'bcrypt-ts'
+import { toInstitutionSummary } from '~~/server/utils/institution'
 
 export default defineEventHandler(async (event) => {
   const { identifier, password, role } = await readBody(event)
@@ -14,12 +15,21 @@ export default defineEventHandler(async (event) => {
   if (role === 'student') {
     user = await prisma.user.findFirst({
       where: { username: identifier, role: 'student' },
-      include: { student: true, institution: true }
+      include: {
+        student: true,
+        institution: true,
+        permissions: true,
+        extracurricularOperator: { select: { id: true, name: true } },
+      }
     })
   } else {
     user = await prisma.user.findFirst({
       where: { username: identifier, role: role as 'admin' | 'operator' },
-      include: { institution: true }
+      include: {
+        institution: true,
+        permissions: true,
+        extracurricularOperator: { select: { id: true, name: true } },
+      }
     })
   }
 
@@ -58,14 +68,10 @@ export default defineEventHandler(async (event) => {
       nis: user.student?.nis || null,
       class: user.student?.class || null,
       phone: user.phone,
-      avatar: user.student?.nis ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=4A9E9E&color=fff` : null
+      avatar: user.avatarUrl || null,
+      extracurricular: user.extracurricularOperator ? { id: user.extracurricularOperator.id, name: user.extracurricularOperator.name } : null,
+      permissions: user.permissions.map(p => p.permissionId)
     },
-    institution: {
-      id: user.institution.id,
-      name: user.institution.name,
-      activeYear: user.institution.activeYear,
-      activeSemester: user.institution.activeSemester,
-      logo: user.institution.logo
-    }
+    institution: toInstitutionSummary(user.institution)
   }
 })

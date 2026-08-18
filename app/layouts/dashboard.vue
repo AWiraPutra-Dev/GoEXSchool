@@ -7,6 +7,8 @@
       <slot />
     </main>
     <AppFooter />
+    <!-- Dialog konfirmasi global — dipakai semua halaman untuk aksi hapus -->
+    <ConfirmDialog />
   </div>
 </template>
 
@@ -22,5 +24,10 @@
   margin-bottom: 40px;
   padding: 20px;
   min-height: calc(100vh - 90px);
+}
+
+:root[dir="rtl"] .main-content {
+  margin-left: 0;
+  margin-right: 260px;
 }
 </style>

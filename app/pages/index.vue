@@ -27,7 +27,7 @@ onMounted(async () => {
       <div class="loading-logo">
         <span>E</span>
       </div>
-      <h1 class="loading-title">EskulHub</h1>
+      <h1 class="loading-title">StudentBase</h1>
       <div class="loading-spinner"></div>
       <p class="loading-text">Memuat...</p>
     </div>

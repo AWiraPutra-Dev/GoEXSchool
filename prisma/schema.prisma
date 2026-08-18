@@ -69,6 +69,13 @@ model Institution {
   activeYear     String   @default("2025/2026")
   activeSemester String   @default("Ganjil")
   logo           String?
+  // Warna aksen tema aplikasi (hex) — diatur admin, berlaku untuk semua role
+  themeColor     String?  @default("#4F46E5")
+  // Lokasi sekolah untuk absensi QR berbasis lokasi (geofencing)
+  latitude       Float?
+  longitude      Float?
+  // Radius absensi dalam meter (default 200m — batas wajar area sekolah)
+  attendanceRadius Int?  @default(200)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -85,6 +92,9 @@ model Institution {
   schedules       Schedule[]
   articles        Article[]
   materials       ExtracurricularMaterial[]
+  notifications   Notification[]
+  agendas         Agenda[]
+  boardPositions  BoardPosition[]
 
   @@map("institution")
 }
@@ -116,18 +126,22 @@ model User {
   username     String     @unique
   passwordHash String
   name         String
-  role         Role
-  phone        String?
-  email        String?
-  status       UserStatus @default(active)
-  institutionId String
-  studentId    String?    @unique
+  role             Role
+  phone            String?
+  email            String?
+  // Foto profil — bisa diunggah siswa & operator ekskul (tampil di TopBar)
+  avatarUrl        String?
+  status           UserStatus @default(active)
+  institutionId    String
+  studentId        String?    @unique
+  extracurricularId String?   // operator ekskul: dibatasi hanya untuk ekskul ini
   lastLogin    DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   institution         Institution       @relation(fields: [institutionId], references: [id])
   student             Student?          @relation(fields: [studentId], references: [id])
+  extracurricularOperator Extracurricular? @relation("ExtracurricularOperators", fields: [extracurricularId], references: [id])
   permissions         UserPermission[]
   feedComments        FeedComment[]
   feedLikes           FeedLike[]
@@ -137,7 +151,10 @@ model User {
   pollsCreated        Poll[]            @relation("PollCreator")
   newsCreated         News[]            @relation("NewsCreator")
   articles            Article[]
+  articleViews        ArticleView[]
   materialsUploaded   ExtracurricularMaterial[]
+  notifications       Notification[]
+  agendas             Agenda[]
 
   @@map("user")
 }
@@ -180,8 +197,18 @@ model Extracurricular {
   quota         Int
   scheduleInfo  String?
   description   String?
+  logoUrl       String?
   institutionId String
   teacherId     String?
+
+  // ===== Pengaturan tampilan Struktur Organisasi ekskul =====
+  // mode: "cards" (buat dari aplikasi: kartu foto+nama+kelas+jabatan)
+  //       | "image" (upload desain jadi, mis. dari Canva)
+  structureMode     String  @default("cards")
+  // URL gambar desain struktur (dipakai saat mode = image)
+  structureImageUrl String?
+  // Tema tampilan kartu: "indigo" | "sunset" | "forest"
+  structureTheme    String  @default("indigo")
 
   institution Institution      @relation(fields: [institutionId], references: [id])
   teacher     Teacher?         @relation(fields: [teacherId], references: [id])
@@ -196,6 +223,9 @@ model Extracurricular {
   achievements Achievement[]
   feedPosts   FeedPost[]
   materials   ExtracurricularMaterial[]
+  articles    Article[]
+  operators   User[]            @relation("ExtracurricularOperators")
+  boardPositions BoardPosition[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -222,17 +252,28 @@ model Member {
 model Schedule {
   id                String @id @default(cuid())
   day               String
+  // Tanggal pertemuan spesifik (opsional). Jika diisi → jadwal pertemuan
+  // sekali waktu; jika kosong → jadwal rutin mingguan (dipakai tiap hari tsb).
+  date              DateTime?
   timeStart         String
   timeEnd           String?
   coach             String
   location          String
+  mandatory         Boolean @default(true)
   extracurricularId String
   institutionId     String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // Titik lokasi geofence spesifik untuk pertemuan ini (diatur operator/admin).
+  // Jika kosong → absensi memakai lokasi sesi QR, lalu lokasi sekolah.
+  latitude  Float?
+  longitude Float?
+  radius    Int?    @default(200)
+
   extracurricular Extracurricular @relation(fields: [extracurricularId], references: [id])
   institution     Institution     @relation(fields: [institutionId], references: [id])
+  records         AttendanceRecord[]
 
   @@map("schedule")
 }
@@ -260,7 +301,13 @@ model AttendanceSession {
   date              DateTime @default(now())
   extracurricularId String
   createdById       String
-  createdAt         DateTime @default(now())
+  // Lokasi geofencing absensi untuk sesi ini (diatur operator saat buat QR).
+  // Radius dalam meter; null = ikuti lokasi sekolah di Pengaturan Instansi.
+  latitude     Float?
+  longitude    Float?
+  radius       Int?     @default(200)
+  locationName String?
+  createdAt    DateTime @default(now())
 
   extracurricular Extracurricular   @relation(fields: [extracurricularId], references: [id])
   createdBy       User              @relation(fields: [createdById], references: [id])
@@ -278,10 +325,15 @@ model AttendanceRecord {
   studentId         String
   extracurricularId String
   sessionId         String?
+  // Pertemuan (jadwal/agenda) terkait izin — izin diajukan dari kalender.
+  scheduleId String?
+  // Scan/foto surat izin yang diunggah siswa saat mengajukan secara digital.
+  proofUrl   String?
 
   student        Student            @relation(fields: [studentId], references: [id])
   extracurricular Extracurricular   @relation(fields: [extracurricularId], references: [id])
   session        AttendanceSession? @relation(fields: [sessionId], references: [id])
+  schedule       Schedule?          @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 
@@ -344,8 +396,12 @@ model News {
   extracurricularId String
   institutionId     String
   createdById       String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  // Status tampil di Event Board siswa (dashboard):
+  // none (belum diajukan) → pending (diajukan operator, menunggu admin)
+  // → approved (disetujui admin, tampil di event board) / rejected (ditolak)
+  displayStatus String   @default("none") // none, pending, approved, rejected
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   extracurricular Extracurricular @relation(fields: [extracurricularId], references: [id])
   institution     Institution     @relation(fields: [institutionId], references: [id])
@@ -479,24 +535,42 @@ model ActivityLog {
 }
 
 model Article {
-  id            String   @id @default(cuid())
-  title         String
-  slug          String   @unique
-  content       String
-  excerpt       String?
-  coverImage    String?
-  category      String   @default("general")
-  tags          String?
-  status        String   @default("draft") // draft, published
-  authorId      String
-  institutionId String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  title             String
+  slug              String   @unique
+  content           String
+  excerpt           String?
+  coverImage        String?
+  category          String   @default("general")
+  tags              String?
+  status            String   @default("draft") // draft, published
+  authorId          String
+  // Operator ekskul: artikel otomatis terikat ke ekskul miliknya.
+  extracurricularId String?
+  institutionId     String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  author      User        @relation(fields: [authorId], references: [id])
-  institution Institution @relation(fields: [institutionId], references: [id])
+  author          User            @relation(fields: [authorId], references: [id])
+  extracurricular Extracurricular? @relation(fields: [extracurricularId], references: [id])
+  institution     Institution     @relation(fields: [institutionId], references: [id])
+  views           ArticleView[]
 
   @@map("article")
+}
+
+model ArticleView {
+  id        String   @id @default(cuid())
+  articleId String
+  userId    String
+  viewedAt  DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+  @@index([articleId])
+  @@map("article_view")
 }
 
 model ExtracurricularMaterial {
@@ -518,3 +592,60 @@ model ExtracurricularMaterial {
 
   @@map("extracurricular_material")
 }
+
+model Notification {
+  id            String   @id @default(cuid())
+  key           String   @unique // de-dupe: `${type}:${refId}:${userId}`
+  userId        String
+  institutionId String
+  type          String // feed, achievement, schedule, poll, news
+  title         String
+  body          String?
+  link          String?
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  institution Institution @relation(fields: [institutionId], references: [id])
+
+  @@map("notification")
+}
+
+model Agenda {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  date          DateTime
+  timeStart     String
+  timeEnd       String?
+  color         String   @default("#4A9E9E")
+  userId        String
+  institutionId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id])
+  institution Institution @relation(fields: [institutionId], references: [id])
+
+  @@map("agenda")
+}  // Kepengurusan / struktur organisasi ekskul. Setiap baris adalah satu jabatan
+  // dengan nama pengurus, kelas, foto (opsional), dan urutan tampil (sortOrder).
+  // Jabatan bebas/custom (contoh: Ketua, Wakil Ketua, Sekretaris, Bendahara, ...)
+  model BoardPosition {
+    id                String   @id @default(cuid())
+    name              String
+    // Kelas pengurus (contoh: XI IPA 1) — ditampilkan di kartu struktur.
+    className         String?
+    position          String
+    photoUrl          String?
+    sortOrder         Int      @default(0)
+    extracurricularId String
+    institutionId     String
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
+
+    extracurricular Extracurricular @relation(fields: [extracurricularId], references: [id])
+    institution     Institution     @relation(fields: [institutionId], references: [id])
+
+    @@map("board_position")
+  }

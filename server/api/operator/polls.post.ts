@@ -2,10 +2,12 @@ import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string; userId: string }
+  const scope = await getOperatorScope(event)
   const { question, options, extracurricularId, endDate } = await readBody(event)
   if (!question || !options?.length || !extracurricularId || !endDate) {
     throw createError({ statusCode: 400, message: 'Pertanyaan, opsi, ekskul, dan tanggal berakhir wajib diisi.' })
   }
+  assertScope(scope, extracurricularId)
   const poll = await prisma.poll.create({
     data: {
       question,

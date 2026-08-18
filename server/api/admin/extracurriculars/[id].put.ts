@@ -3,7 +3,7 @@ import { prisma } from '~~/server/utils/prisma'
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string }
   const id = getRouterParam(event, 'id')
-  const { name, quota, scheduleInfo, description, teacherId } = await readBody(event)
+  const { name, quota, scheduleInfo, description, teacherId, logoUrl } = await readBody(event)
 
   const ekskul = await prisma.extracurricular.findFirst({
     where: { id, institutionId: auth.institutionId }
@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 
   return prisma.extracurricular.update({
     where: { id },
-    data: { name, quota, scheduleInfo, description, teacherId },
+    data: { name, quota, scheduleInfo, description, teacherId, logoUrl: typeof logoUrl === 'string' ? logoUrl : null },
     include: { teacher: true, _count: { select: { members: true } } }
   })
 })

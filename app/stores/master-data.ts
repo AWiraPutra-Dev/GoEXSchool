@@ -6,49 +6,51 @@ export interface Student {
 export interface Teacher {
   id: string; nip: string; name: string; subject: string; phone: string | null
 }
-export interface ClassItem {
-  id: string; name: string; grade: string; major: string; studentCount: number; homeroom: string | null
-}
 export interface Ekskul {
-  id: string; name: string; teacher?: { name: string } | null; _count?: { members: number }; coach?: string; members: number; quota: number; scheduleInfo: string | null; description: string | null
+  id: string; name: string; teacher?: { name: string } | null; _count?: { members: number }; coach?: string; members: number; quota: number; scheduleInfo: string | null; description: string | null; logoUrl?: string | null
 }
 export interface AppUser {
-  id: string; name: string; username: string; role: string; phone: string | null; email: string | null; status: 'active' | 'inactive'; permissions: { permissionId: string }[]
+  id: string; name: string; username: string; role: string; phone: string | null; email: string | null; status: 'active' | 'inactive'; permissions: { permissionId: string }[]; nis?: string | null; class?: string | null; extracurricularId?: string | null; ekskul?: string | null
 }
 
 export const useMasterDataStore = defineStore('masterData', {
   state: () => ({
     students: [] as Student[],
     teachers: [] as Teacher[],
-    classes: [] as ClassItem[],
     extracurriculars: [] as Ekskul[],
     appUsers: [] as AppUser[],
-    loading: false
+    loading: false,
+    /** Waktu terakhir data master berhasil dimuat (untuk cache antar navigasi) */
+    loadedAt: null as number | null
   }),
 
   getters: {
     totalStudents: (state) => state.students.length,
     totalTeachers: (state) => state.teachers.length,
-    totalClasses: (state) => state.classes.length,
     totalEkskul: (state) => state.extracurriculars.length,
     totalUsers: (state) => state.appUsers.length,
     activeUsers: (state) => state.appUsers.filter(u => u.status === 'active').length
   },
 
   actions: {
-    async fetchAll() {
+    /**
+     * Muat semua data master. Data di-cache (TTL) sehingga pindah menu tidak
+     * memicu fetch ulang — render langsung dari memori. Paksa dengan force=true.
+     */
+    async fetchAll(force = false) {
+      if (!force && isFresh(this.loadedAt)) return
+      // Dedup: jangan tumpuk request jika sudah ada yang berjalan.
+      if (this.loading) return
       this.loading = true
       try {
-        const [students, teachers, classes, ekskuls, users] = await Promise.all([
+        const [students, teachers, ekskuls, users] = await Promise.all([
           $fetch<Student[]>('/api/admin/students'),
           $fetch<Teacher[]>('/api/admin/teachers'),
-          $fetch<ClassItem[]>('/api/admin/classes'),
           $fetch<Ekskul[]>('/api/admin/extracurriculars'),
           $fetch<AppUser[]>('/api/admin/users'),
         ])
         this.students = students
         this.teachers = teachers
-        this.classes = classes
         this.extracurriculars = ekskuls.map(e => ({
           ...e,
           coach: e.teacher?.name || '',
@@ -56,8 +58,47 @@ export const useMasterDataStore = defineStore('masterData', {
           schedule: e.scheduleInfo
         }))
         this.appUsers = users
+        this.loadedAt = Date.now()
       } finally {
         this.loading = false
+      }
+    },
+
+    /**
+     * Mengambil data referensi bersama (siswa + ekskul) yang boleh diakses
+     * SEMUA role — dipakai dropdown operator & siswa (bukan /api/admin/*).
+     */
+    async fetchReference(force = false) {
+      if (!force && isFresh(this.loadedAt)) return
+      if (this.loading) return
+      this.loading = true
+      try {
+        const res = await $fetch<{ students: Student[]; extracurriculars: Ekskul[] }>('/api/shared/reference')
+        this.students = res.students
+        this.extracurriculars = res.extracurriculars.map(e => ({
+          ...e,
+          coach: e.teacher?.name || '',
+          members: e._count?.members || 0,
+          schedule: e.scheduleInfo
+        }))
+        this.applyEkskulScope()
+        this.loadedAt = Date.now()
+      } catch {
+        // Abaikan — data lama tetap dipakai sampai berhasil.
+      } finally {
+        this.loading = false
+      }
+    },
+
+    /**
+     * Operator ekskul hanya boleh melihat ekskul miliknya — sembunyikan
+     * ekskul lain dari dropdown (data master tetap difilter di server).
+     */
+    applyEkskulScope() {
+      const auth = useAuthStore()
+      const scope = auth.user?.extracurricular
+      if (scope?.id) {
+        this.extracurriculars = this.extracurriculars.filter(e => e.id === scope.id)
       }
     },
 
@@ -93,50 +134,45 @@ export const useMasterDataStore = defineStore('masterData', {
       this.teachers = this.teachers.filter(t => t.id !== id)
     },
 
-    async addClass(data: { name: string; grade: string; major?: string; homeroom?: string }) {
-      const c = await $fetch<ClassItem>('/api/admin/classes', { method: 'POST', body: data })
-      this.classes.push(c)
-    },
-
-    async updateClass(id: string, data: { name?: string; grade?: string; major?: string; homeroom?: string }) {
-      const c = await $fetch<ClassItem>(`/api/admin/classes/${id}`, { method: 'PUT', body: data })
-      const idx = this.classes.findIndex(cl => cl.id === id)
-      if (idx >= 0) this.classes[idx] = c
-    },
-
-    async deleteClass(id: string) {
-      await $fetch(`/api/admin/classes/${id}`, { method: 'DELETE' })
-      this.classes = this.classes.filter(c => c.id !== id)
-    },
-
     async importStudents(students: Array<{ name: string; class: string; gender: string; phone?: string }>) {
       const res = await $fetch<{ success: boolean; count: number; students: Student[] }>('/api/admin/students/import', { method: 'POST', body: { students } })
       this.students.push(...res.students)
       return res.count
     },
 
-    async addEkskul(data: { name: string; quota?: number; scheduleInfo?: string; description?: string; teacherId?: string }) {
+    async addEkskul(data: { name: string; quota?: number; scheduleInfo?: string; description?: string; teacherId?: string; logoUrl?: string | null }) {
       const e = await $fetch<Ekskul>('/api/admin/extracurriculars', { method: 'POST', body: data })
       this.extracurriculars.push({ ...e, coach: e.teacher?.name || '', members: e._count?.members || 0, schedule: e.scheduleInfo })
     },
 
-    async updateEkskul(id: string, data: { name?: string; quota?: number; scheduleInfo?: string; description?: string; teacherId?: string }) {
+    async updateEkskul(id: string, data: { name?: string; quota?: number; scheduleInfo?: string; description?: string; teacherId?: string; logoUrl?: string | null }) {
       const e = await $fetch<Ekskul>(`/api/admin/extracurriculars/${id}`, { method: 'PUT', body: data })
       const idx = this.extracurriculars.findIndex(ex => ex.id === id)
       if (idx >= 0) this.extracurriculars[idx] = { ...e, coach: e.teacher?.name || '', members: e._count?.members || 0, schedule: e.scheduleInfo }
     },
 
     async deleteEkskul(id: string) {
-      await $fetch(`/api/admin/extracurriculars/${id}`, { method: 'DELETE' })
+      const res = await $fetch<{ success: boolean; deleted?: number; related?: Array<{ label: string; count: number }> }>(`/api/admin/extracurriculars/${id}`, { method: 'DELETE' })
       this.extracurriculars = this.extracurriculars.filter(e => e.id !== id)
+      return res
     },
 
-    async addUser(data: { username: string; password: string; name: string; role: string; phone?: string; email?: string; permissions?: string[] }) {
+    async addUser(data: { username: string; password: string; name: string; role: string; phone?: string; email?: string; permissions?: string[]; extracurricularId?: string; nis?: string }) {
       const u = await $fetch<AppUser>('/api/admin/users', { method: 'POST', body: data })
       this.appUsers.push(u)
     },
 
-    async updateUser(id: string, data: { name?: string; phone?: string; email?: string; status?: string; permissions?: string[] }) {
+    /** Import akun user massal dari file Excel (admin/operator/siswa). */
+    async importUsers(file: File) {
+      const fd = new FormData()
+      fd.append('file', file)
+      return await $fetch<{ success: boolean; count: number; errors: Array<{ row: number; message: string }> }>('/api/admin/users/import', {
+        method: 'POST',
+        body: fd,
+      })
+    },
+
+    async updateUser(id: string, data: { name?: string; phone?: string; email?: string; status?: string; permissions?: string[]; extracurricularId?: string | null }) {
       const u = await $fetch<AppUser>(`/api/admin/users/${id}`, { method: 'PUT', body: data })
       const idx = this.appUsers.findIndex(au => au.id === id)
       if (idx >= 0) this.appUsers[idx] = u

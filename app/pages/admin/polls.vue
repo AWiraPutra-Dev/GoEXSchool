@@ -2,6 +2,8 @@
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
 const op = useOperatorDataStore()
+const ui = useUiStore()
+onMounted(() => op.fetchAll())
 const filter = ref('all')
 
 const filteredPolls = computed(() => {
@@ -9,13 +11,15 @@ const filteredPolls = computed(() => {
   if (filter.value === 'active') return op.polls.filter(p => p.active)
   return op.polls.filter(p => !p.active)
 })
+
+const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="page-title">Voting</h1>
+        <h1 class="page-title">{{ ui.t('menu.polls') }}</h1>
         <p class="text-[13px]" style="color: var(--text-secondary);">{{ op.polls.length }} total voting</p>
       </div>
       <div class="flex gap-2">
@@ -26,15 +30,19 @@ const filteredPolls = computed(() => {
     </div>
 
     <div class="polls-list">
-      <div v-for="poll in filteredPolls" :key="poll.id" class="poll-card">
+      <div v-for="poll in paged" :key="poll.id" class="poll-card">
         <div class="poll-header">
           <div class="flex items-center gap-2">
-            <span class="poll-ekskul-badge">{{ poll.ekskul }}</span>
+            <span v-if="poll.ekskulLogo" class="poll-ekskul-badge ekskul-logo-chip">
+              <img :src="poll.ekskulLogo" class="ekskul-logo-img" alt="" />
+              {{ poll.ekskul }}
+            </span>
+            <span v-else class="poll-ekskul-badge">{{ poll.ekskul }}</span>
             <span class="poll-status-badge" :class="poll.active ? 'badge-active' : 'badge-done'">{{ poll.active ? 'Berlangsung' : 'Selesai' }}</span>
           </div>
           <span class="poll-date">{{ poll.endDate }}</span>
         </div>
-        <h3 class="poll-question">{{ poll.question }}</h3>
+        <h3 class="poll-question"><TranslatedText :text="poll.question" /></h3>
         <div class="poll-results">
           <div v-for="opt in poll.options" :key="opt.label" class="poll-result-item">
             <div class="result-label-row">
@@ -51,6 +59,7 @@ const filteredPolls = computed(() => {
         <p style="color: var(--text-muted); font-size: var(--text-sm);">Belum ada voting.</p>
       </div>
     </div>
+    <PaginationBar v-model:page="page" :total="filteredPolls.length" />
   </div>
 </template>
 
@@ -62,6 +71,8 @@ const filteredPolls = computed(() => {
 .poll-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 16px 20px; }
 .poll-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .poll-ekskul-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.ekskul-logo-chip { display: inline-flex; align-items: center; gap: 4px; }
+.ekskul-logo-img { width: 16px; height: 16px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
 .poll-status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
 .badge-active { background: rgba(74,158,158,0.15); color: var(--teal); }
 .badge-done { background: rgba(212,106,90,0.15); color: var(--red-orange); }

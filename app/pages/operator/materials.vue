@@ -1,8 +1,11 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
+const ui = useUiStore()
 const op = useOperatorDataStore()
 const admin = useMasterDataStore()
+const { myEkskul, isOperator, isScopedOperator } = useEkskulScope()
+const { confirm } = useConfirm()
 const showModal = ref(false)
 const saving = ref(false)
 const selectedEkskul = ref('')
@@ -18,7 +21,7 @@ const form = reactive({
 })
 
 onMounted(() => {
-  admin.fetchAll()
+  admin.fetchReference()
   op.fetchMaterials()
 })
 
@@ -27,13 +30,25 @@ const filteredMaterials = computed(() => {
   return op.materials.filter((m: any) => m.ekskulId === selectedEkskul.value)
 })
 
-const ekskulList = computed(() => [
-  { id: '', name: 'Semua Ekskul' },
-  ...admin.extracurriculars.map(e => ({ id: e.id, name: e.name }))
-])
+const { page, paged, totalPages } = usePagination(() => filteredMaterials.value)
+
+// Filter ekskul diambil dari data materi (sudah di-scope server per operator),
+// bukan dari daftar umum — jadi operator tidak akan pernah melihat ekskul lain.
+const ekskulList = computed(() => {
+  const seen = new Map<string, string>()
+  for (const m of op.materials as any[]) {
+    if (m.ekskulId && !seen.has(m.ekskulId)) seen.set(m.ekskulId, m.ekskul)
+  }
+  return [
+    { id: '', name: 'Semua Ekskul' },
+    ...[...seen.entries()].map(([id, name]) => ({ id, name }))
+  ]
+})
 
 function openCreate() {
   Object.assign(form, { title: '', description: '', extracurricularId: '', fileType: 'link', content: '' })
+  // Operator ekskul: materi otomatis untuk ekskul miliknya
+  if (isScopedOperator.value && myEkskul.value) form.extracurricularId = myEkskul.value.id
   uploadedFile.value = null
   showModal.value = true
 }
@@ -71,8 +86,15 @@ async function save() {
   } finally { saving.value = false }
 }
 
-async function removeMaterial(id: string) {
-  if (confirm('Hapus materi ini?')) await op.deleteMaterial(id)
+async function removeMaterial(m: any) {
+  const ok = await confirm({
+    title: `Hapus materi "${m.title}"?`,
+    message: 'Materi ini akan dihapus permanen dan tidak bisa diakses siswa lagi.',
+    confirmText: 'Ya, Hapus',
+    danger: true,
+  })
+  if (!ok) return
+  await op.deleteMaterial(m.id)
 }
 
 const fileTypeIcons: Record<string, string> = {
@@ -98,7 +120,7 @@ const fileTypeColors: Record<string, string> = {
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="page-title">Materi Ekstrakurikuler</h1>
+        <h1 class="page-title">{{ ui.t('menu.materials') }}</h1>
         <p class="text-[13px]" style="color: var(--text-secondary);">{{ op.materials.length }} total materi</p>
       </div>
       <button class="btn-primary" @click="openCreate">
@@ -116,7 +138,7 @@ const fileTypeColors: Record<string, string> = {
 
     <!-- Materials Grid -->
     <div class="materials-grid">
-      <div v-for="m in filteredMaterials" :key="m.id" class="material-card">
+      <div v-for="m in paged" :key="m.id" class="material-card">
         <div class="material-icon" :style="{ background: fileTypeColors[m.fileType || 'link'] + '20', color: fileTypeColors[m.fileType || 'link'] }">
           <Icon :name="fileTypeIcons[m.fileType || 'link'] || 'i-lucide-file'" class="w-6 h-6" />
         </div>
@@ -132,7 +154,7 @@ const fileTypeColors: Record<string, string> = {
           <a v-if="m.fileUrl" :href="m.fileUrl" target="_blank" class="material-download-btn" title="Download">
             <Icon name="i-lucide-download" class="w-4 h-4" />
           </a>
-          <button class="material-delete-btn" @click="removeMaterial(m.id)" title="Hapus">🗑️</button>
+          <button class="material-delete-btn" @click="removeMaterial(m)" title="Hapus"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
         </div>
       </div>
       <div v-if="!filteredMaterials.length" class="empty-state">
@@ -140,6 +162,7 @@ const fileTypeColors: Record<string, string> = {
         <p style="color: var(--text-muted);">Belum ada materi. Upload materi pembelajaran untuk siswa.</p>
       </div>
     </div>
+    <PaginationBar v-model:page="page" :total="filteredMaterials.length" />
 
     <!-- Modal -->
     <Teleport to="body">
@@ -154,10 +177,12 @@ const fileTypeColors: Record<string, string> = {
               </div>
               <div class="form-group">
                 <label>Ekskul</label>
-                <select v-model="form.extracurricularId" class="form-input" required>
+                <select v-if="!isOperator" v-model="form.extracurricularId" class="form-input" required>
                   <option disabled value="">Pilih Ekskul</option>
                   <option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option>
                 </select>
+                <div v-else-if="myEkskul" class="scope-badge"><Icon name="i-lucide-shield" class="w-4 h-4" /> {{ myEkskul.name }}</div>
+                <div v-else class="scope-warning"><Icon name="i-lucide-alert-circle" class="w-4 h-4" /> Akun belum diikat ke ekskul. Hubungi admin.</div>
               </div>
             </div>
             <div class="form-group">
@@ -180,7 +205,7 @@ const fileTypeColors: Record<string, string> = {
                 <div v-if="uploadedFile && !uploading" class="file-uploaded">
                   <Icon name="i-lucide-check-circle" class="w-5 h-5" style="color: var(--teal);" />
                   <span>{{ uploadedFile.name }}</span>
-                  <button type="button" class="file-remove-btn" @click="uploadedFile = null">✕</button>
+                  <button type="button" class="file-remove-btn" @click="uploadedFile = null"><Icon name="i-lucide-x" class="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             </div>
@@ -252,7 +277,9 @@ const fileTypeColors: Record<string, string> = {
 .loading-spinner-sm { width: 18px; height: 18px; border: 2px solid var(--border-light); border-top-color: var(--olive-primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .file-uploaded { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.file-remove-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
+.file-remove-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; display: inline-flex; align-items: center; justify-content: center; }
 .file-remove-btn:hover { color: var(--text-red); }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }
 </style>

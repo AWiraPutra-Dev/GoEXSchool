@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
 
   const teacher = await prisma.teacher.findFirst({ where: { id, institutionId: auth.institutionId } })
-  if (!teacher) throw createError({ statusCode: 404, message: 'Guru tidak ditemukan.' })
+  if (!teacher) throw createError({ statusCode: 404, message: 'Pembimbing tidak ditemukan.' })
 
   await prisma.extracurricular.updateMany({ where: { teacherId: id }, data: { teacherId: null } })
   await prisma.teacher.delete({ where: { id } })

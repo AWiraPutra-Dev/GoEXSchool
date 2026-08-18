@@ -10,13 +10,14 @@ export default defineEventHandler(async (event) => {
       institutionId: auth.institutionId,
       extracurricularId: { in: myMemberEkskulIds },
     },
-    include: { extracurricular: { select: { name: true } }, images: { take: 3, select: { url: true } } },
+    include: { extracurricular: { select: { name: true, logoUrl: true } }, images: { take: 3, select: { url: true } } },
     orderBy: { date: 'desc' },
   })
   return galleries.map(g => ({
     id: g.id,
     title: g.title,
     ekskul: g.extracurricular.name,
+    ekskulLogo: g.extracurricular.logoUrl,
     date: g.date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
     color: g.color,
     imageCount: g.imageCount,

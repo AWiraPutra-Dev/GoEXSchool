@@ -2,7 +2,9 @@
   <div class="chart-card">
     <h3 class="chart-title">{{ title }}</h3>
     <div class="chart-body">
-      <canvas ref="canvasRef"></canvas>
+      <div class="chart-canvas-wrap">
+        <canvas ref="canvasRef"></canvas>
+      </div>
     </div>
   </div>
 </template>
@@ -72,13 +74,16 @@ function createChart() {
     chartInstance.destroy()
   }
 
-  const defaultColors = ['#4A9E9E', '#8B9467', '#D4956A', '#D46A5A', '#7BA87B', '#D4C089', '#2D6A6A', '#9CA37A']
+  const defaultColors = ['#6366F1', '#8B5CF6', '#0EA5E9', '#10B981', '#F59E0B', '#F43F5E', '#14B8A6', '#64748B']
+
+  // Font konsisten dengan aplikasi
+  const uiFont = "'Segoe UI', 'Roboto', 'Open Sans', sans-serif"
 
   chartInstance = new Chart(canvasRef.value, {
     type: props.type === 'doughnut' ? 'doughnut' : props.type,
     data: {
       labels: props.labels,
-      datasets: props.datasets.map((ds, i) => ({
+      datasets: props.datasets.map((ds) => ({
         ...ds,
         backgroundColor: ds.backgroundColor || defaultColors,
         borderColor: ds.borderColor || '#ffffff',
@@ -87,23 +92,54 @@ function createChart() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
+      // Supersampling 2x: canvas dirender di resolusi ganda lalu di-downscale,
+      // sehingga teks & garis selalu tajam/HD di layar mana pun (termasuk saat
+      // halaman memakai zoom < 1). ResizeObserver akan menyesuaikan ukuran.
+      devicePixelRatio: (window.devicePixelRatio || 1) * 2,
+      animation: false,
+      layout: {
+        padding: { top: 4, right: 4, bottom: 4, left: 4 }
+      },
+      scales: props.type === 'line' || props.type === 'bar' || props.type === 'radar'
+        ? {
+            x: {
+              ticks: { font: { size: 11, family: uiFont, weight: 500 }, color: '#64748B', maxRotation: 0 },
+              grid: { color: 'rgba(100, 116, 139, 0.12)' },
+              border: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 11, family: uiFont, weight: 500 }, color: '#64748B', precision: 0 },
+              grid: { color: 'rgba(100, 116, 139, 0.12)' },
+              border: { display: false }
+            }
+          }
+        : undefined,
       plugins: {
         legend: {
           position: 'bottom',
           labels: {
-            font: { size: 11, family: "'Segoe UI', sans-serif" },
-            padding: 12,
+            font: { size: 12, family: uiFont, weight: 500 },
+            color: '#64748B',
+            padding: 14,
             usePointStyle: true,
-            pointStyle: 'circle'
+            pointStyle: 'circle',
+            boxWidth: 8,
+            boxHeight: 8
           }
         },
         tooltip: {
-          backgroundColor: '#2C3E50',
-          titleFont: { size: 12 },
-          bodyFont: { size: 11 },
+          enabled: true,
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          titleFont: { size: 12, weight: 600, family: uiFont },
+          bodyFont: { size: 12, family: uiFont },
           padding: 10,
-          cornerRadius: 8
+          cornerRadius: 8,
+          displayColors: true,
+          boxWidth: 8,
+          boxHeight: 8,
+          usePointStyle: true
         }
       },
       ...props.options
@@ -111,9 +147,26 @@ function createChart() {
   } as any)
 }
 
-onMounted(createChart)
+// Redraw saat ukuran kartu berubah (layout/lebar layar) agar selalu sinkron
+// dengan container — mencegah canvas discale → blur.
+let resizeObserver: ResizeObserver | null = null
+function observeResize() {
+  if (!canvasRef.value || typeof ResizeObserver === 'undefined') return
+  resizeObserver = new ResizeObserver(() => {
+    if (chartInstance) chartInstance.resize()
+  })
+  resizeObserver.observe(canvasRef.value)
+}
+
+onMounted(() => {
+  createChart()
+  observeResize()
+  // Re-render sekali setelah frame pertama agar ukuran benar-benar final
+  requestAnimationFrame(() => chartInstance?.resize())
+})
 watch(() => [props.labels, props.datasets], createChart, { deep: true })
 onUnmounted(() => {
+  if (resizeObserver) resizeObserver.disconnect()
   if (chartInstance) chartInstance.destroy()
 })
 </script>
@@ -131,23 +184,39 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
 .chart-title {
-  background: var(--olive-primary);
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-weight: var(--font-semibold);
   text-transform: uppercase;
   font-size: 12px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--border-light);
+}
+.chart-title::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 .chart-body {
   padding: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 250px;
 }
-.chart-body canvas {
-  max-height: 260px;
-  max-width: 100%;
+/* Wrapper dengan tinggi tetap: Chart.js mengukur container ini dan merender
+   canvas tepat seukuran container — tidak ada scaling ekstra dari CSS. */
+.chart-canvas-wrap {
+  position: relative;
+  height: 240px;
+}
+.chart-canvas-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>

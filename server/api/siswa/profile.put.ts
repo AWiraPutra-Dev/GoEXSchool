@@ -2,11 +2,11 @@ import { prisma } from '~~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { userId: string; studentId?: string }
-  const { name, phone, class: className } = await readBody(event)
+  const { name, phone, class: className, avatarUrl } = await readBody(event)
 
   const user = await prisma.user.update({
     where: { id: auth.userId },
-    data: { name, phone },
+    data: { name, phone, ...(avatarUrl !== undefined ? { avatarUrl } : {}) },
   })
 
   if (auth.studentId) {
@@ -21,5 +21,6 @@ export default defineEventHandler(async (event) => {
     name: user.name,
     role: user.role,
     phone: user.phone,
+    avatar: user.avatarUrl || null,
   }
 })

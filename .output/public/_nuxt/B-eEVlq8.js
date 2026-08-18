@@ -1,0 +1,1 @@
+function e(e){return!!e&&Date.now()-e<3e4}export{e as t};

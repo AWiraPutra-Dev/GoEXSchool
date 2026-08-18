@@ -8,7 +8,6 @@ export default defineEventHandler(async (event) => {
   if (!student) throw createError({ statusCode: 404, message: 'Siswa tidak ditemukan.' })
 
   await prisma.member.deleteMany({ where: { studentId: id } })
-  await prisma.assessment.deleteMany({ where: { studentId: id } })
   await prisma.attendanceRecord.deleteMany({ where: { studentId: id } })
   await prisma.achievement.deleteMany({ where: { studentId: id } })
 

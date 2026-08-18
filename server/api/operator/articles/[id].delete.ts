@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
   if (!article) {
     throw createError({ statusCode: 404, message: 'Artikel tidak ditemukan.' })
   }
+  const scope = await getOperatorScope(event)
+  assertScope(scope, article.extracurricularId || undefined)
 
   await prisma.article.delete({ where: { id } })
   return { success: true }

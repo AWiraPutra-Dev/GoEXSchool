@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 
-const SECRET = process.env.JWT_SECRET || 'eskulhub-jwt-secret-key-2026'
+const SECRET = process.env.JWT_SECRET || 'studentbase-jwt-secret-key-2026'
 
 export interface JwtPayload {
   userId: string
@@ -11,7 +11,9 @@ export interface JwtPayload {
 }
 
 export function generateToken(payload: JwtPayload): string {
-  return jwt.sign(payload, SECRET, { expiresIn: '24h' })
+  // Sesi 7 hari — cukup lama agar pengguna yang sudah login tidak sering
+  // di-logout, tapi tetap pendek sehingga token yang bocor tidak abadi.
+  return jwt.sign(payload, SECRET, { expiresIn: '7d' })
 }
 
 export function verifyToken(token: string): JwtPayload {

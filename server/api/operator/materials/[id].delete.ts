@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
   if (!material) {
     throw createError({ statusCode: 404, message: 'Materi tidak ditemukan.' })
   }
+  const scope = await getOperatorScope(event)
+  assertScope(scope, material.extracurricularId)
 
   await prisma.extracurricularMaterial.delete({ where: { id } })
   return { success: true }

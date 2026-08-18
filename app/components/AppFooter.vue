@@ -1,6 +1,10 @@
+<script setup lang="ts">
+const ui = useUiStore()
+</script>
+
 <template>
   <footer class="app-footer">
-    <span>&copy; {{ new Date().getFullYear() }} EskulHub — Aplikasi Manajemen Ekstrakurikuler Sekolah</span>
+    <span>&copy; {{ new Date().getFullYear() }} StudentBase · {{ ui.t('footer.rights') }}</span>
     <span class="footer-version">v1.0.0</span>
   </footer>
 </template>

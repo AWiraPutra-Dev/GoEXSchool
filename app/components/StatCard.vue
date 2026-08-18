@@ -10,51 +10,70 @@ defineProps<{
 <template>
   <div
     class="stat-card"
-    :style="{ background: color }"
+    :style="{ borderLeftColor: color }"
   >
     <div>
       <p class="stat-value">{{ value }}</p>
       <p class="stat-label">{{ label }}</p>
     </div>
-    <Icon :name="icon" class="stat-icon" />
+    <div
+      class="stat-icon-wrap"
+      :style="{ background: `color-mix(in srgb, ${color} 12%, #FFFFFF)`, color }"
+    >
+      <Icon :name="icon" class="stat-icon" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 .stat-card {
-  border-radius: 12px;
-  padding: 18px 20px;
-  color: white;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-left: 4px solid var(--teal);
+  border-radius: 10px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-width: 150px;
+  gap: 12px;
+  min-width: 140px;
   transition: transform 0.2s, box-shadow 0.2s;
   cursor: default;
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 .stat-value {
-  font-size: var(--text-stat);
+  font-size: 22px;
   font-weight: var(--font-bold);
   line-height: var(--leading-tight);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
-  font-size: var(--text-sm);
-  margin-top: 4px;
-  opacity: 0.9;
+  font-size: var(--text-xs);
+  margin-top: 3px;
+  color: var(--text-secondary);
   font-weight: var(--font-medium);
 }
 
+.stat-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .stat-icon {
-  width: 28px;
-  height: 28px;
-  opacity: 0.8;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 </style>

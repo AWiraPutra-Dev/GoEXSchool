@@ -1,4 +1,4 @@
-# EskulHub — Prototype Tampilan (Frontend Only)
+# StudentBase — Prototype Tampilan (Frontend Only)
 
 Versi ini **khusus untuk melihat tampilan & alur UI di browser**. Tidak ada
 database, tidak ada Prisma, tidak butuh `.env`. Semua data yang muncul adalah

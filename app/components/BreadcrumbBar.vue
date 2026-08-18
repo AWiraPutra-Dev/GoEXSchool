@@ -12,34 +12,38 @@ const breadcrumbs = computed(() => {
   
   // Map path to labels
   const labelMap: Record<string, string> = {
-    admin: 'Admin',
-    operator: 'Operator',
-    siswa: 'Siswa',
-    students: 'Data Siswa',
-    teachers: 'Data Guru',
-    classes: 'Kelas / Rombel',
-    extracurriculars: 'Ekstrakurikuler',
-    users: 'User & Privileges',
-    reports: 'Laporan',
-    settings: 'Pengaturan',
-    attendance: 'Absensi QR',
-    assessments: 'Penilaian',
-    schedule: 'Jadwal',
-    blog: 'Blog & Artikel',
-    materials: 'Materi Ekskul',
-    members: 'Anggota',
-    news: 'Pengumuman & Berita',
-    polls: 'Voting',
-    gallery: 'Galeri',
-    feed: 'Feed Komunitas',
-    achievements: 'Portofolio Prestasi',
-    grades: 'Penilaian',
-    profile: 'Profil Saya'
+    admin: 'crumb.admin',
+    operator: 'crumb.operator',
+    siswa: 'crumb.siswa',
+    students: 'crumb.students',
+    teachers: 'crumb.teachers',
+    extracurriculars: 'crumb.extracurriculars',
+    users: 'crumb.users',
+    reports: 'crumb.reports',
+    settings: 'crumb.settings',
+    attendance: 'crumb.attendance',
+    izin: 'crumb.izin',
+    schedule: 'crumb.schedule',
+    blog: 'crumb.blog',
+    materials: 'crumb.materials',
+    members: 'crumb.members',
+    board: 'crumb.board',
+    news: 'crumb.news',
+    polls: 'crumb.polls',
+    gallery: 'crumb.gallery',
+    logo: 'crumb.logo',
+    feed: 'crumb.feed',
+    achievements: 'crumb.achievements',
+    profile: 'crumb.profile',
+    calendar: 'crumb.calendar'
   }
   
+  const ui = useUiStore()
   for (let i = 0; i < parts.length; i++) {
     const path = '/' + parts.slice(0, i + 1).join('/')
-    const label = labelMap[parts[i]] ?? parts[i].charAt(0).toUpperCase() + parts[i].slice(1)
+    const part = parts[i] as string
+    const key = labelMap[part] ?? null
+    const label = key ? ui.t(key) : part.charAt(0).toUpperCase() + part.slice(1)
     items.push({ label, to: path })
   }
   

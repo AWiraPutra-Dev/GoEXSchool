@@ -14,9 +14,11 @@ export default defineEventHandler(async (event) => {
   const dayOrder = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
   for (const d of dayOrder) grouped[d] = []
   for (const s of schedules) {
-    if (!grouped[s.day]) grouped[s.day] = []
-    grouped[s.day].push({
+    const day = s.day || 'Lainnya'
+    if (!grouped[day]) grouped[day] = []
+    grouped[day].push({
       time: s.timeEnd ? `${s.timeStart} - ${s.timeEnd}` : s.timeStart,
+      date: s.date ? s.date.toISOString().slice(0, 10) : null,
       ekskul: s.extracurricular.name,
       coach: s.coach,
       location: s.location,

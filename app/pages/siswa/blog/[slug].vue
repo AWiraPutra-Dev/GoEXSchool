@@ -2,6 +2,7 @@
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
 const route = useRoute()
+const ui = useUiStore()
 const article = ref<any>(null)
 const loading = ref(true)
 
@@ -26,11 +27,18 @@ onMounted(async () => {
     <div class="article-container">
       <div class="article-meta-bar">
         <span class="article-category">{{ article.category }}</span>
+        <span v-if="article.ekskulLogo" class="ekskul-logo-chip">
+          <img :src="article.ekskulLogo" class="ekskul-logo-img" alt="" />
+          {{ article.ekskul }}
+        </span>
         <span class="article-date">{{ article.createdAt }}</span>
         <span class="article-author">Oleh: {{ article.author }}</span>
+        <span v-if="article.viewCount !== undefined" class="article-views">
+          <Icon name="i-lucide-eye" class="w-4 h-4" /> {{ article.viewCount }} dibaca
+        </span>
       </div>
 
-      <h1 class="article-title">{{ article.title }}</h1>
+      <h1 class="article-title"><TranslatedText :text="article.title" /></h1>
 
       <div class="article-content" v-html="article.content"></div>
     </div>
@@ -57,6 +65,9 @@ onMounted(async () => {
 .article-meta-bar { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
 .article-category { font-size: 11px; padding: 4px 12px; border-radius: 6px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
 .article-date, .article-author { font-size: var(--text-sm); color: var(--text-muted); }
+.ekskul-logo-chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); font-weight: var(--font-medium); }
+.ekskul-logo-img { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
+.article-views { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm); color: var(--olive-primary); font-weight: var(--font-medium); }
 .article-title { font-size: 28px; font-weight: 800; color: var(--text-primary); line-height: 1.3; margin-bottom: 24px; }
 .article-content { font-size: var(--text-md); color: var(--text-primary); line-height: 1.8; }
 .article-content :deep(p) { margin-bottom: 16px; }

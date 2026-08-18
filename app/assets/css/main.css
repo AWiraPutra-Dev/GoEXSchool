@@ -1,49 +1,145 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* ===== Mode Gelap =====
+   Variabel warna yang sama dipakai ulang dengan palet gelap — semua komponen
+   memakai var() sehingga mode berganti total & instan tanpa reload. */
+:root[data-theme="dark"] {
+  --accent: #818CF8;
+  --accent-dark: #6366F1;
+  --accent-light: color-mix(in srgb, var(--accent) 60%, #0F172A);
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, #0F172A);
+  --accent-border: color-mix(in srgb, var(--accent) 40%, #0F172A);
+
+  --olive-primary: var(--accent);
+  --olive-dark: var(--accent-dark);
+  --olive-light: var(--accent-light);
+  --olive-bg: var(--accent-soft);
+
+  --teal-dark: #5EEAD4;
+  --teal-mid: #2DD4BF;
+  --teal: #14B8A6;
+  --green-soft: #34D399;
+  --yellow-cream: #FBBF24;
+  --orange: #FB923C;
+  --red-orange: #F87171;
+  --red-orange-dark: #EF4444;
+
+  --bg-main: #0F172A;
+  --bg-card: #1E293B;
+  --bg-sidebar: #1E293B;
+  --bg-header: #1E293B;
+  /* Top bar abu-abu (gelap) */
+  --bg-topbar: #24303F;
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-light: #FFFFFF;
+  --text-red: #FCA5A5;
+  --text-red-dark: #F87171;
+
+  --border-light: #334155;
+  --border-medium: #475569;
+
+  --bg-istirahat: #4C1D24;
+  --bg-active-menu: var(--accent);
+  --bg-hover: #334155;
+
+  --avatar-green: #34D399;
+  --avatar-teal: #2DD4BF;
+}
+
+/* Transisi halus saat ganti mode (background, teks, border) — cepat & tanpa lag. */
+:root[data-theme] body,
+:root[data-theme] .bg-card,
+:root[data-theme] .table-card,
+:root[data-theme] .form-card,
+:root[data-theme] .panel-card,
+:root[data-theme] .feed-card,
+:root[data-theme] .poll-card,
+:root[data-theme] .gallery-card,
+:root[data-theme] .article-card,
+:root[data-theme] .ekskul-card,
+:root[data-theme] .stat-mini,
+:root[data-theme] .step-item,
+:root[data-theme] .dashboard-layout,
+:root[data-theme] .sidebar,
+:root[data-theme] .topbar,
+:root[data-theme] .main-content,
+:root[data-theme] table,
+:root[data-theme] tr,
+:root[data-theme] td,
+:root[data-theme] th,
+:root[data-theme] input,
+:root[data-theme] textarea,
+:root[data-theme] select {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Mode RTL (Arab) — sidebar & konten diputar otomatis. */
+:root[dir="rtl"] .sidebar { left: auto; right: 0; }
+:root[dir="rtl"] .main-content { margin-left: 0; margin-right: 260px; }
+
 :root {
-  /* ===== Warna Utama - Hijau Olive/Sage ===== */
-  --olive-primary: #8B9467;
-  --olive-dark: #7A8359;
-  --olive-light: #9CA37A;
-  --olive-bg: #E8EBE0;
+  /* ===== Perkecil tampilan keseluruhan agar proporsional di layar lebar =====
+     Setara browser zoom-out ringan: semua elemen (teks, kartu, tabel, padding)
+     otomatis ikut mengecil tanpa merusak proporsinya. Ubah angkanya untuk
+     menyesuaikan — 1 = ukuran normal, 0.92 = ~8% lebih kecil. */
+  zoom: 0.92;
 
-  /* ===== Stat Card Colors ===== */
-  --teal-dark: #2D6A6A;
-  --teal-mid: #3D7A7A;
-  --teal: #4A9E9E;
-  --green-soft: #7BA87B;
-  --yellow-cream: #D4C089;
-  --orange: #D4956A;
-  --red-orange: #D46A5A;
-  --red-orange-dark: #C45A4A;
+  /* ===== Warna Aksen Tema (bisa di-custom admin, berlaku semua role) =====
+     Default: Tech Indigo. Turunannya dihitung otomatis lewat color-mix. */
+  --accent: #4F46E5;
+  --accent-dark: color-mix(in srgb, var(--accent) 80%, #0F172A);
+  --accent-light: color-mix(in srgb, var(--accent) 60%, #FFFFFF);
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, #FFFFFF);
+  --accent-border: color-mix(in srgb, var(--accent) 28%, #FFFFFF);
 
-  /* ===== Background & Surface ===== */
-  --bg-main: #F0F0F0;
+  /* ===== Warna Utama (terikat ke aksen tema) ===== */
+  --olive-primary: var(--accent);
+  --olive-dark: var(--accent-dark);
+  --olive-light: var(--accent-light);
+  --olive-bg: var(--accent-soft);
+
+  /* ===== Stat Card Colors (modern pastel) ===== */
+  --teal-dark: #0F766E;
+  --teal-mid: #0D9488;
+  --teal: #14B8A6;
+  --green-soft: #10B981;
+  --yellow-cream: #F59E0B;
+  --orange: #F97316;
+  --red-orange: #EF4444;
+  --red-orange-dark: #DC2626;
+
+  /* ===== Background & Surface — putih bersih di atas Off-White Slate ===== */
+  --bg-main: #F8FAFC;
   --bg-card: #FFFFFF;
   --bg-sidebar: #FFFFFF;
   --bg-header: #FFFFFF;
+  /* Top bar abu-abu netral (terang) */
+  --bg-topbar: #E2E8F0;
 
-  /* ===== Text Colors ===== */
-  --text-primary: #2C3E50;
-  --text-secondary: #666666;
-  --text-muted: #999999;
+  /* ===== Text Colors — Deep Slate ===== */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
   --text-light: #FFFFFF;
-  --text-red: #CC4444;
-  --text-red-dark: #D9534F;
+  --text-red: #DC2626;
+  --text-red-dark: #B91C1C;
 
   /* ===== Borders ===== */
-  --border-light: #E0E0E0;
-  --border-medium: #D0D0D0;
+  --border-light: #E2E8F0;
+  --border-medium: #CBD5E1;
 
   /* ===== Highlight & States ===== */
-  --bg-istirahat: #FFE0E0;
-  --bg-active-menu: #8B9467;
-  --bg-hover: #F5F5F5;
+  --bg-istirahat: #FFE4E6;
+  --bg-active-menu: var(--accent);
+  --bg-hover: #F1F5F9;
 
   /* ===== Avatar Colors ===== */
-  --avatar-green: #4CAF50;
-  --avatar-teal: #26A69A;
+  --avatar-green: #10B981;
+  --avatar-teal: #14B8A6;
 
   /* ===== Font Family ===== */
   --font-family: 'Segoe UI', 'Roboto', 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -75,6 +171,30 @@ body, input, button, textarea, select {
   font-family: var(--font-family);
 }
 
+/* ===== Angka & waktu =====
+   Tabular numerals: semua digit punya lebar sama sehingga angka di tabel,
+   jam, dan jadwal sejajar rapi & tidak "goyang" saat berubah (standar web
+   profesional seperti Stripe/Linear/Vercel). */
+body {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Radius halus & seragam untuk semua kotak isian =====
+   Jaminan agar setiap input/select/textarea punya sudut membulat kecil
+   yang profesional (6px) meskipun belum punya kelas styling tersendiri. */
+input[type='text'],
+input[type='password'],
+input[type='email'],
+input[type='number'],
+input[type='date'],
+input[type='url'],
+input[type='tel'],
+input[type='search'],
+select,
+textarea {
+  border-radius: 6px;
+}
+
 body {
   background: var(--bg-main);
   color: var(--text-primary);
@@ -89,7 +209,7 @@ body {
 }
 
 .loading-shimmer {
-  background: linear-gradient(90deg, #F0F0F0 25%, #E0E0E0 50%, #F0F0F0 75%);
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
@@ -102,9 +222,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D0D0D0;
+  background: #CBD5E1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B0B0B0;
+  background: #94A3B8;
 }

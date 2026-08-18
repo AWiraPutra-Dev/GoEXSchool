@@ -3,10 +3,11 @@ import { prisma } from '~~/server/utils/prisma'
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string }
   const query = getQuery(event)
+  const scope = await getOperatorScope(event)
   const members = await prisma.member.findMany({
     where: {
       student: { institutionId: auth.institutionId },
-      ...(query.ekskulId ? { extracurricularId: String(query.ekskulId) } : {}),
+      ...scopeFilter(scope, query.ekskulId),
     },
     include: {
       student: { select: { nis: true, name: true, class: true } },

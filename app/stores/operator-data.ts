@@ -3,32 +3,39 @@ import { defineStore } from 'pinia'
 export interface Member {
   id: string; studentId: string; nis: string; name: string; class: string; ekskul: string; ekskulId: string; joinDate: string; status: 'active' | 'inactive'
 }
-export interface Assessment {
-  id: string; student: string; studentId: string; ekskul: string; ekskulId: string; score: number; grade: string; notes: string; date: string
-}
 export interface ScheduleEntry {
-  id: string; day: string; time: string; timeStart: string; timeEnd?: string; ekskul: string; ekskulId: string; coach: string; location: string
+  id: string; day: string; date?: string | null; time: string; timeStart: string; timeEnd?: string; ekskul: string; ekskulId: string; coach: string; location: string; mandatory?: boolean
+  latitude?: number | null; longitude?: number | null; radius?: number | null
 }
 export interface PollOption {
   id?: string; label: string; votes: number
 }
 export interface Poll {
-  id: string; question: string; options: PollOption[]; ekskul: string; ekskulId: string; endDate: string; active: boolean
+  id: string; question: string; options: PollOption[]; ekskul: string; ekskulLogo?: string | null; ekskulId: string; endDate: string; active: boolean
 }
 export interface NewsItem {
-  id: string; title: string; content: string; date: string; isPublic: boolean; ekskul: string; ekskulId: string; author: string
+  id: string; title: string; content: string; date: string; isPublic: boolean; ekskul: string; ekskulLogo?: string | null; ekskulId: string; author: string; displayStatus?: 'none' | 'pending' | 'approved' | 'rejected'
 }
 export interface GalleryItem {
-  id: string; title: string; ekskul: string; ekskulId: string; date: string; color: string; imageCount: number
+  id: string; title: string; ekskul: string; ekskulLogo?: string | null; ekskulId: string; date: string; color: string; imageCount: number
+  images?: Array<{ id: string; url: string }>
 }
 export interface AttendanceHistoryItem {
   id: string; date: string; ekskul: string; hadir: number; total: number; status: string
+  records?: Array<{ id: string; student: string; nis: string; class: string; status: string; time: string | null; notes: string | null }>
+}
+export interface BoardPosition {
+  id: string; name: string; className: string | null; position: string; photoUrl: string | null; sortOrder: number; ekskulId: string; ekskul: string; ekskulLogo?: string | null
+}
+/** Pengaturan tampilan Struktur Organisasi per ekskul. */
+export interface StructureSettings {
+  ekskulId: string; ekskul: string; ekskulLogo?: string | null
+  mode: 'cards' | 'image'; imageUrl: string | null; theme: string; positionCount: number
 }
 
 export const useOperatorDataStore = defineStore('operatorData', {
   state: () => ({
     members: [] as Member[],
-    assessments: [] as Assessment[],
     schedule: [] as ScheduleEntry[],
     attendanceHistory: [] as AttendanceHistoryItem[],
     polls: [] as Poll[],
@@ -36,16 +43,29 @@ export const useOperatorDataStore = defineStore('operatorData', {
     gallery: [] as GalleryItem[],
     articles: [] as any[],
     materials: [] as any[],
+    board: [] as BoardPosition[],
+    structures: [] as StructureSettings[],
     loading: false,
+    /** Waktu terakhir data operator berhasil dimuat (untuk cache antar navigasi) */
+    loadedAt: null as number | null,
+    articlesLoadedAt: null as number | null,
+    materialsLoadedAt: null as number | null,
+    boardLoadedAt: null as number | null,
+    structuresLoadedAt: null as number | null,
   }),
 
   actions: {
-    async fetchAll() {
+    /**
+     * Muat semua data operator. Data di-cache (TTL) sehingga pindah menu tidak
+     * memicu fetch ulang — render langsung dari memori. Paksa dengan force=true.
+     */
+    async fetchAll(force = false) {
+      if (!force && isFresh(this.loadedAt)) return
+      if (this.loading) return
       this.loading = true
       try {
-        const [members, assessments, schedule, polls, news, gallery, attendanceHistory] = await Promise.all([
+        const [members, schedule, polls, news, gallery, attendanceHistory] = await Promise.all([
           $fetch<Member[]>('/api/operator/members'),
-          $fetch<Assessment[]>('/api/operator/assessments'),
           $fetch<ScheduleEntry[]>('/api/operator/schedule'),
           $fetch<Poll[]>('/api/operator/polls'),
           $fetch<NewsItem[]>('/api/operator/news'),
@@ -53,20 +73,22 @@ export const useOperatorDataStore = defineStore('operatorData', {
           $fetch<AttendanceHistoryItem[]>('/api/operator/attendance/history').catch(() => []),
         ])
         this.members = members
-        this.assessments = assessments
         this.schedule = schedule
         this.polls = polls
         this.news = news
         this.gallery = gallery
         this.attendanceHistory = attendanceHistory
+        this.loadedAt = Date.now()
       } finally {
         this.loading = false
       }
     },
 
-    async fetchArticles() {
+    async fetchArticles(force = false) {
+      if (!force && isFresh(this.articlesLoadedAt)) return
       try {
         this.articles = await $fetch<any[]>('/api/operator/articles')
+        this.articlesLoadedAt = Date.now()
       } catch {}
     },
 
@@ -87,10 +109,12 @@ export const useOperatorDataStore = defineStore('operatorData', {
       this.articles = this.articles.filter((a: any) => a.id !== id)
     },
 
-    async fetchMaterials(ekskulId?: string) {
+    async fetchMaterials(ekskulId?: string, force = false) {
+      if (!force && isFresh(this.materialsLoadedAt)) return
       try {
         const url = ekskulId ? `/api/operator/materials?ekskulId=${ekskulId}` : '/api/operator/materials'
         this.materials = await $fetch<any[]>(url)
+        this.materialsLoadedAt = Date.now()
       } catch {}
     },
 
@@ -121,12 +145,7 @@ export const useOperatorDataStore = defineStore('operatorData', {
       this.members = this.members.filter(m => m.id !== id)
     },
 
-    async addAssessment(data: { studentId: string; extracurricularId: string; score: number; notes?: string }) {
-      const a = await $fetch<Assessment>('/api/operator/assessments', { method: 'POST', body: data })
-      this.assessments.unshift(a)
-    },
-
-    async addScheduleEntry(data: { day: string; timeStart: string; timeEnd?: string; coach: string; location: string; extracurricularId: string }) {
+    async addScheduleEntry(data: { day: string; date?: string; timeStart: string; timeEnd?: string; coach: string; location: string; extracurricularId: string; mandatory?: boolean; latitude?: number | null; longitude?: number | null; radius?: number | null }) {
       const s = await $fetch<ScheduleEntry>('/api/operator/schedule', { method: 'POST', body: data })
       this.schedule.push(s)
     },
@@ -168,6 +187,27 @@ export const useOperatorDataStore = defineStore('operatorData', {
       this.news = this.news.filter(n => n.id !== id)
     },
 
+    /** Operator mengajukan berita agar tampil di Event Board siswa (menunggu persetujuan admin). */
+    async requestNewsDisplay(id: string) {
+      const res = await $fetch<{ displayStatus: string }>(`/api/operator/news/${id}`, { method: 'PUT', body: { displayStatus: 'pending' } })
+      const n = this.news.find(n => n.id === id)
+      if (n) n.displayStatus = res.displayStatus as any
+    },
+
+    /** Operator menarik pengajuan tampil. */
+    async withdrawNewsDisplay(id: string) {
+      const res = await $fetch<{ displayStatus: string }>(`/api/operator/news/${id}`, { method: 'PUT', body: { displayStatus: 'none' } })
+      const n = this.news.find(n => n.id === id)
+      if (n) n.displayStatus = res.displayStatus as any
+    },
+
+    /** Admin menyetujui / menolak / membatalkan tampil berita (Event Board siswa). */
+    async setNewsDisplay(id: string, displayStatus: 'none' | 'pending' | 'approved' | 'rejected') {
+      await $fetch(`/api/admin/news/${id}`, { method: 'PUT', body: { displayStatus } })
+      const n = this.news.find(n => n.id === id)
+      if (n) n.displayStatus = displayStatus
+    },
+
     async addGallery(data: { title: string; extracurricularId: string; color?: string; imageUrls?: string[] }) {
       const g = await $fetch<GalleryItem>('/api/operator/gallery', { method: 'POST', body: data })
       this.gallery.unshift(g)
@@ -178,15 +218,49 @@ export const useOperatorDataStore = defineStore('operatorData', {
       this.gallery = this.gallery.filter(g => g.id !== id)
     },
 
-    async updateAssessment(id: string, data: { score?: number; notes?: string }) {
-      const a = await $fetch<Assessment>(`/api/operator/assessments/${id}`, { method: 'PUT', body: data })
-      const idx = this.assessments.findIndex(as => as.id === id)
-      if (idx >= 0) this.assessments[idx] = a
+    // ---- Kepengurusan / struktur organisasi ekskul ----
+    async fetchBoard(force = false) {
+      if (!force && isFresh(this.boardLoadedAt)) return
+      try {
+        this.board = await $fetch<BoardPosition[]>('/api/operator/board')
+        this.boardLoadedAt = Date.now()
+      } catch {}
     },
 
-    async deleteAssessment(id: string) {
-      await $fetch(`/api/operator/assessments/${id}`, { method: 'DELETE' })
-      this.assessments = this.assessments.filter(a => a.id !== id)
+    async addBoardPosition(data: { name: string; className?: string | null; position: string; photoUrl?: string | null; sortOrder?: number; extracurricularId: string }) {
+      const p = await $fetch<BoardPosition>('/api/operator/board', { method: 'POST', body: data })
+      this.board.push(p)
+      this.board.sort((a, b) => a.sortOrder - b.sortOrder)
     },
+
+    async updateBoardPosition(id: string, data: { name?: string; className?: string | null; position?: string; photoUrl?: string | null; sortOrder?: number }) {
+      const p = await $fetch<BoardPosition>(`/api/operator/board/${id}`, { method: 'PUT', body: data })
+      const idx = this.board.findIndex(b => b.id === id)
+      if (idx >= 0) this.board[idx] = p
+      this.board.sort((a, b) => a.sortOrder - b.sortOrder)
+    },
+
+    async deleteBoardPosition(id: string) {
+      await $fetch(`/api/operator/board/${id}`, { method: 'DELETE' })
+      this.board = this.board.filter(b => b.id !== id)
+    },
+
+    // ---- Pengaturan tampilan Struktur Organisasi per ekskul ----
+    async fetchStructures(force = false) {
+      if (!force && isFresh(this.structuresLoadedAt)) return
+      try {
+        this.structures = await $fetch<StructureSettings[]>('/api/operator/board/structure')
+        this.structuresLoadedAt = Date.now()
+      } catch {}
+    },
+
+    async updateStructure(ekskulId: string, data: { mode?: 'cards' | 'image'; imageUrl?: string | null; theme?: string }) {
+      const s = await $fetch<StructureSettings>(`/api/operator/board/structure/${ekskulId}`, { method: 'PUT', body: data })
+      const idx = this.structures.findIndex(x => x.ekskulId === ekskulId)
+      if (idx >= 0) this.structures[idx] = s
+      else this.structures.push(s)
+      return s
+    },
+
   },
 })

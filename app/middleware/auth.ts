@@ -10,6 +10,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return navigateTo('/login')
     }
 
+    // Sinkronkan data instansi + data role terbaru setiap kali berpindah halaman
+    // (tanpa menunggu) sehingga perubahan dari role lain langsung diikuti.
+    auth.refreshInstitution()
+    refreshRoleData()
+
     const rolePrefix: Record<string, string> = {
       super_admin: '/platform',
       admin: '/admin',

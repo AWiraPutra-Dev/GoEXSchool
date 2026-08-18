@@ -2,8 +2,32 @@
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
 const siswa = useSiswaDataStore()
+const route = useRoute()
+const ui = useUiStore()
+const shareTarget = ref<any>(null)
 const newComments = ref<Record<string, string>>({})
 const showComments = ref<Record<string, boolean>>({})
+
+const search = ref('')
+const filteredFeed = computed(() => {
+  const q = search.value.toLowerCase()
+  if (!q) return siswa.feed
+  return siswa.feed.filter((p: any) =>
+    (p.title || '').toLowerCase().includes(q) ||
+    (p.content || '').toLowerCase().includes(q) ||
+    (p.author || '').toLowerCase().includes(q)
+  )
+})
+const { page, paged, totalPages } = usePagination(() => filteredFeed.value)
+
+onMounted(async () => {
+  await siswa.fetchAll()
+  if (route.query.post) {
+    nextTick(() => {
+      document.getElementById(`post-${route.query.post}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+})
 
 function toggleLike(postId: string) { siswa.toggleLike(postId) }
 function toggleComments(postId: string) { showComments.value[postId] = !showComments.value[postId] }
@@ -12,7 +36,7 @@ function addComment(postId: string) {
   siswa.addComment(postId, newComments.value[postId])
   newComments.value[postId] = ''
 }
-function sharePost(post: any) { alert(`Link berita "${post.title}" telah disalin ke clipboard! (Fitur simulasi)`) }
+
 
 const typeIcons: Record<string, string> = {
   announcement: 'i-lucide-megaphone', achievement: 'i-lucide-award', gallery: 'i-lucide-image', poll: 'i-lucide-vote', schedule: 'i-lucide-calendar'
@@ -24,11 +48,15 @@ const typeColors: Record<string, string> = {
 
 <template>
   <div class="space-y-4">
-    <h1 class="page-title">Feed Komunitas</h1>
-    <p class="text-[13px]" style="color: var(--text-secondary); margin-top: -12px;">Ikuti berita dan aktivitas terbaru dari ekskul kamu</p>
+    <h1 class="page-title">{{ ui.t('menu.feed') }}</h1>
+    <p class="text-[13px]" style="color: var(--text-secondary); margin-top: -12px;">{{ ui.t('menu.feed') }}</p>
+
+    <div class="table-toolbar">
+      <input v-model="search" type="text" placeholder="Cari judul, isi, atau penulis..." class="search-input">
+    </div>
 
     <div class="feed-list">
-      <div v-for="post in siswa.feed" :key="post.id" class="feed-card">
+      <div v-for="post in paged" :key="post.id" :id="`post-${post.id}`" class="feed-card" :class="{ 'post-highlight': route.query.post === post.id }">
         <div class="feed-header">
           <div class="feed-author-info">
             <div class="feed-avatar" :style="{ background: typeColors[post.type] }">{{ post.avatar }}</div>
@@ -36,11 +64,11 @@ const typeColors: Record<string, string> = {
           </div>
           <div class="feed-type-badge" :style="{ background: typeColors[post.type] + '20', color: typeColors[post.type] }">
             <Icon :name="typeIcons[post.type]" class="w-3.5 h-3.5" />
-            <span>{{ post.type === 'announcement' ? 'Pengumuman' : post.type === 'achievement' ? 'Prestasi' : post.type === 'gallery' ? 'Galeri' : post.type === 'poll' ? 'Voting' : 'Jadwal' }}</span>
+            <span>{{ post.type === 'announcement' ? ui.t('feed.type.announcement') : post.type === 'achievement' ? ui.t('feed.type.achievement') : post.type === 'gallery' ? ui.t('feed.type.gallery') : post.type === 'poll' ? ui.t('feed.type.poll') : ui.t('feed.type.schedule') }}</span>
           </div>
         </div>
-        <h3 class="feed-title">{{ post.title }}</h3>
-        <p class="feed-content">{{ post.content }}</p>
+        <h3 class="feed-title"><TranslatedText :text="post.title" /></h3>
+        <p class="feed-content"><TranslatedText :text="post.content" /></p>
 
         <div v-if="post.type === 'gallery'" class="feed-gallery-preview">
           <div v-for="i in 3" :key="i" class="gallery-thumb" :style="{ background: typeColors[post.type] + '30' }">
@@ -51,13 +79,13 @@ const typeColors: Record<string, string> = {
         <div class="feed-actions">
           <button class="feed-action-btn" :class="{ liked: post.liked }" @click="toggleLike(post.id)">
             <Icon name="i-lucide-heart" class="w-4 h-4" :style="{ color: post.liked ? 'var(--red-orange)' : undefined }" />
-            <span>{{ post.likes }} Suka</span>
+            <span>{{ post.likes }} {{ ui.t('feed.like') }}</span>
           </button>
           <button class="feed-action-btn" @click="toggleComments(post.id)">
-            <Icon name="i-lucide-message-circle" class="w-4 h-4" /><span>{{ post.comments.length }} Komentar</span>
+            <Icon name="i-lucide-message-circle" class="w-4 h-4" /><span>{{ post.comments.length }} {{ ui.t('feed.comments') }}</span>
           </button>
-          <button class="feed-action-btn" @click="sharePost(post)">
-            <Icon name="i-lucide-share-2" class="w-4 h-4" /><span>Bagikan</span>
+          <button class="feed-action-btn" @click="shareTarget = post">
+            <Icon name="i-lucide-share-2" class="w-4 h-4" /><span>{{ ui.t('feed.share') }}</span>
           </button>
         </div>
 
@@ -70,20 +98,34 @@ const typeColors: Record<string, string> = {
             </div>
           </div>
           <form class="comment-form" @submit.prevent="addComment(post.id)">
-            <input v-model="newComments[post.id]" type="text" class="comment-input" placeholder="Tulis komentar..." required>
+            <input v-model="newComments[post.id]" type="text" class="comment-input" :placeholder="ui.t('feed.writeComment')" required>
             <button type="submit" class="comment-send-btn" :disabled="!newComments[post.id]?.trim()"><Icon name="i-lucide-send" class="w-4 h-4" /></button>
           </form>
         </div>
       </div>
+      <div v-if="!filteredFeed.length" class="empty-state">
+        <Icon name="i-lucide-newspaper" class="w-12 h-12 mb-3" style="color: var(--text-muted);" />
+        <p style="color: var(--text-muted); font-size: var(--text-sm);">Belum ada postingan yang cocok.</p>
+      </div>
     </div>
+
+    <PaginationBar v-model:page="page" :total="filteredFeed.length" />
+
+    <FeedShareSheet :open="!!shareTarget" :post="shareTarget" @close="shareTarget = null" />
   </div>
 </template>
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
+.table-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; }
+.search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); width: 280px; color: var(--text-primary); background: var(--bg-card); }
+.search-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
+.empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }
 .feed-list { display: flex; flex-direction: column; gap: 16px; max-width: 700px; }
 .feed-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 20px 24px; transition: all 0.2s; }
 .feed-card:hover { border-color: var(--olive-light); }
+.post-highlight { border-color: var(--olive-primary); box-shadow: 0 0 0 3px rgba(139,148,103,0.18); animation: highlight-pulse 1.5s ease; }
+@keyframes highlight-pulse { 0% { background: rgba(139,148,103,0.15); } 100% { background: var(--bg-card); } }
 .feed-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
 .feed-author-info { display: flex; align-items: center; gap: 12px; }
 .feed-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: var(--font-bold); flex-shrink: 0; }

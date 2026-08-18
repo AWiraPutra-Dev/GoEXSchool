@@ -1,1 +1,0 @@
-import{w as e}from"./DzFpSuAb.js";import{r as t}from"./k3ZIAfLP.js";function n(){let n=t(),r=e(()=>n.user?.extracurricular??null),i=e(()=>n.user?.role===`operator`);return{myEkskul:r,isOperator:i,isScopedOperator:e(()=>i.value&&!!r.value)}}export{n as t};

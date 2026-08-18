@@ -1,0 +1,21 @@
+# 1. Environment Variables & Kredensialgit
+.env
+.env.*
+!.env.example
+
+# 2. Dependensi Node.js
+node_modules/
+
+# 3. Build & Cache Output Nuxt
+.nuxt/
+.output/
+dist/
+
+# 4. Logs & File OS
+*.log
+.DS_Store
+Thumbs.db
+
+# 5. Database SQLite Lokal (jika memakai SQLite di Prisma)
+prisma/*.db
+prisma/*.db-journal

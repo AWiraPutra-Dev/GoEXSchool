@@ -1,1 +1,0 @@
-function e(e){let t=document.documentElement;typeof e==`string`&&/^#[0-9a-fA-F]{6}$/.test(e)?t.style.setProperty(`--accent`,e):t.style.removeProperty(`--accent`)}export{e as t};

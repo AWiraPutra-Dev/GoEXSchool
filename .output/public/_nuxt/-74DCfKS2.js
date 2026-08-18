@@ -1,1 +1,0 @@
-import{E as e,F as t,Z as n}from"./DzFpSuAb.js";import{t as r}from"./CNs_Ozdc.js";import{t as i}from"./9quxm45h2.js";var a=t({__name:`izin`,setup(t){return r({layout:`dashboard`,middleware:`auth`}),(t,r)=>{let a=i;return n(),e(a)}}});export{a as default};

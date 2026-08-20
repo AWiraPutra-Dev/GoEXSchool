@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
     ekskul: g.extracurricular.name,
     ekskulLogo: g.extracurricular.logoUrl,
     ekskulId: g.extracurricularId,
+    author: g.author,
     date: g.date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
     color: g.color,
     imageCount: g.imageCount,

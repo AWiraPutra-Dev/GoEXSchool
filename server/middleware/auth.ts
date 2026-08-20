@@ -1,5 +1,6 @@
 import { verifyToken } from '../utils/jwt'
-import { prisma } from '../utils/prisma'
+import { featureOfPath, isUploadPath, loadUserPermissions } from '../utils/permissions'
+import { permKey, actionOfMethod } from '~~/app/utils/permissions'
 
 const publicRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/check-nis']
 
@@ -31,30 +32,40 @@ export default defineEventHandler(async (event) => {
 
     const role = payload.role
 
-    // Guard per-prefix:
-    // - /api/admin/*   → hanya admin / super_admin
-    // - /api/operator/* → admin / super_admin / operator
-    //   (admin perlu membaca & mengelola data kegiatan lewat halaman monitoring)
+    // ===== Guard per-prefix =====
+    // - /api/admin/*   → admin / super_admin, ATAU user berprivilege
+    //                    dengan permission fitur yang sesuai (lihat di bawah)
+    // - /api/operator/* → admin / super_admin / operator, ATAU user
+    //                    berprivilege dengan permission fitur yang sesuai
     // - /api/siswa/*   → semua role yang sudah login
-    //   (admin memantau feed & prestasi siswa lewat endpoint ini)
     // - /api/shared/*  → semua role yang sudah login (data referensi bersama)
-    if (path.startsWith('/api/admin/') && role !== 'admin' && role !== 'super_admin') {
-      throw createError({ statusCode: 403, message: 'Anda tidak memiliki akses ke menu ini.' })
-    }
 
-    if (path.startsWith('/api/operator/') && role !== 'admin' && role !== 'super_admin' && role !== 'operator') {
-      // User non-operator (mis. siswa) boleh mengelola Struktur ekskul bila
-      // diberi privilege 'structure' oleh admin lewat User & Privileges.
-      // (termasuk upload foto/desain struktur lewat /api/operator/upload)
-      if (path.startsWith('/api/operator/board') || path.startsWith('/api/operator/upload')) {
-        const user = await prisma.user.findUnique({
-          where: { id: payload.userId },
-          select: { permissions: { select: { permissionId: true } } },
-        })
-        const perms = user?.permissions.map(p => p.permissionId) ?? []
-        if (perms.includes('structure')) return
+    const isAdminArea = path.startsWith('/api/admin/') && role !== 'admin' && role !== 'super_admin'
+    const isOperatorArea = path.startsWith('/api/operator/') && role !== 'admin' && role !== 'super_admin' && role !== 'operator'
+
+    if (isAdminArea || isOperatorArea) {
+      // User non-admin/non-operator (mis. siswa) boleh mengakses area
+      // admin/operator HANYA bila punya permission `fitur:aksi` yang sesuai
+      // (diatur admin lewat User & Privileges). Metode HTTP → aksi:
+      //   GET=lihat, POST=buat, PUT=ubah, DELETE=hapus.
+      const perms = await loadUserPermissions(event, payload.userId)
+
+      if (isUploadPath(path)) {
+        // Upload gambar/foto: cukup punya SATU aksi create pada fitur mana pun.
+        if (!perms.some(p => p.endsWith(':create'))) {
+          throw createError({ statusCode: 403, message: 'Anda tidak memiliki hak akses untuk tindakan ini.' })
+        }
+        return
       }
-      throw createError({ statusCode: 403, message: 'Anda tidak memiliki akses ke menu ini.' })
+
+      const feature = featureOfPath(path)
+      if (!feature) {
+        throw createError({ statusCode: 403, message: 'Anda tidak memiliki akses ke menu ini.' })
+      }
+      const action = actionOfMethod(event.method)
+      if (!perms.includes(permKey(feature, action))) {
+        throw createError({ statusCode: 403, message: 'Anda tidak memiliki hak akses untuk tindakan ini.' })
+      }
     }
   } catch (err: any) {
     if (err?.statusCode) throw err

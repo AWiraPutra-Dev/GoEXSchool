@@ -52,9 +52,6 @@ export async function studentsReport(instId: string) {
 }
 
 // ─── Laporan Kehadiran Ekskul ───
-// Payload laporan dibuat RINGAN: hanya ringkasan + rekap per ekskul.
-// Catatan detail (bisa sangat banyak) diambil terpisah & terpaginasi
-// lewat endpoint /api/admin/reports/attendance-detail agar halaman cepat.
 export async function attendanceReport(instId: string) {
   const records = await prisma.attendanceRecord.findMany({
     where: { extracurricular: { institutionId: instId } },
@@ -87,7 +84,7 @@ export async function attendanceReport(instId: string) {
   }
 }
 
-// ─── Filter & baris kehadiran (dipakai detail paginasi & export Excel) ───
+// ─── Filter & baris kehadiran ───
 export function attendanceWhere(instId: string, filters: { ekskul?: string; start?: string; end?: string } = {}): Prisma.AttendanceRecordWhereInput {
   const date: Prisma.DateTimeFilter | undefined =
     filters.start || filters.end
@@ -139,9 +136,13 @@ export async function attendanceRows(
 }
 
 // ─── Laporan Prestasi ───
-export async function achievementsReport(instId: string) {
+export async function achievementsReport(instId: string, filters?: { level?: string; class?: string }) {
+  const where: any = { extracurricular: { institutionId: instId } }
+  if (filters?.level) where.level = filters.level
+  if (filters?.class) where.student = { class: filters.class }
+
   const achievements = await prisma.achievement.findMany({
-    where: { extracurricular: { institutionId: instId } },
+    where,
     include: {
       student: { select: { name: true, class: true } },
       extracurricular: { select: { name: true } },
@@ -156,10 +157,19 @@ export async function achievementsReport(instId: string) {
     if (a.level in byLevel) byLevel[a.level]++
   }
 
+  // Get available classes for filter dropdown
+  const allClasses = await prisma.student.findMany({
+    where: { institutionId: instId },
+    select: { class: true },
+    distinct: ['class'],
+    orderBy: { class: 'asc' },
+  })
+
   return {
     total: achievements.length,
     byType,
     byLevel,
+    availableClasses: allClasses.map(c => c.class),
     achievements: achievements.map(a => ({
       date: a.date,
       title: a.title,
@@ -173,8 +183,6 @@ export async function achievementsReport(instId: string) {
 }
 
 // ─── Laporan Keuangan ───
-// Sistem belum memiliki modul/tabel keuangan (iuran & anggaran).
-// Laporan ini menampilkan status yang jujur + angka konteks yang tersedia.
 export async function financeReport(instId: string) {
   const [members, ekskuls, students] = await Promise.all([
     prisma.member.count({ where: { status: 'active', student: { institutionId: instId } } }),
@@ -189,24 +197,63 @@ export async function financeReport(instId: string) {
 }
 
 // ─── Laporan Tahunan ───
-export async function annualReport(instId: string) {
+export async function annualReport(instId: string, filters?: { ekskul?: string; class?: string }) {
+  // Build where conditions
+  const memberWhere: any = { status: 'active', student: { institutionId: instId } }
+  if (filters?.class) memberWhere.student = { class: filters.class }
+  if (filters?.ekskul) memberWhere.extracurricular = { name: filters.ekskul }
+
+  const studentWhere: any = { institutionId: instId }
+  if (filters?.class) studentWhere.class = filters.class
+
+  const teacherWhere: any = { institutionId: instId }
+  const ekskulWhere: any = { institutionId: instId }
+  if (filters?.ekskul) ekskulWhere.name = filters.ekskul
+
+  const scheduleWhere: any = { institutionId: instId }
+  if (filters?.ekskul) scheduleWhere.extracurricular = { name: filters.ekskul }
+
+  const sessionWhere: any = { extracurricular: { institutionId: instId } }
+  if (filters?.ekskul) sessionWhere.extracurricular = { name: filters.ekskul }
+
+  const attendanceWhere: any = { extracurricular: { institutionId: instId } }
+  if (filters?.ekskul) attendanceWhere.extracurricular = { name: filters.ekskul }
+
+  const achievementWhere: any = { extracurricular: { institutionId: instId } }
+  if (filters?.ekskul) achievementWhere.extracurricular = { name: filters.ekskul }
+
   const [
     inst, students, teachers, ekskuls, members, schedules, sessions,
     polls, news, galleries, achievements, attendanceRecords, hadir,
   ] = await Promise.all([
     prisma.institution.findUnique({ where: { id: instId } }),
-    prisma.student.count({ where: { institutionId: instId } }),
-    prisma.teacher.count({ where: { institutionId: instId } }),
-    prisma.extracurricular.count({ where: { institutionId: instId } }),
-    prisma.member.count({ where: { status: 'active', student: { institutionId: instId } } }),
-    prisma.schedule.count({ where: { institutionId: instId } }),
-    prisma.attendanceSession.count({ where: { extracurricular: { institutionId: instId } } }),
+    prisma.student.count({ where: studentWhere }),
+    prisma.teacher.count({ where: teacherWhere }),
+    prisma.extracurricular.count({ where: ekskulWhere }),
+    prisma.member.count({ where: memberWhere }),
+    prisma.schedule.count({ where: scheduleWhere }),
+    prisma.attendanceSession.count({ where: sessionWhere }),
     prisma.poll.count({ where: { institutionId: instId } }),
     prisma.news.count({ where: { institutionId: instId } }),
     prisma.gallery.count({ where: { institutionId: instId } }),
-    prisma.achievement.count({ where: { extracurricular: { institutionId: instId } } }),
-    prisma.attendanceRecord.count({ where: { extracurricular: { institutionId: instId } } }),
-    prisma.attendanceRecord.count({ where: { extracurricular: { institutionId: instId }, status: 'hadir' } }),
+    prisma.achievement.count({ where: achievementWhere }),
+    prisma.attendanceRecord.count({ where: attendanceWhere }),
+    prisma.attendanceRecord.count({ where: { ...attendanceWhere, status: 'hadir' } }),
+  ])
+
+  // Get available classes & ekskuls for filter dropdowns
+  const [allClasses, allEkskuls] = await Promise.all([
+    prisma.student.findMany({
+      where: { institutionId: instId },
+      select: { class: true },
+      distinct: ['class'],
+      orderBy: { class: 'asc' },
+    }),
+    prisma.extracurricular.findMany({
+      where: { institutionId: instId },
+      select: { name: true },
+      orderBy: { name: 'asc' },
+    }),
   ])
 
   return {
@@ -225,6 +272,8 @@ export async function annualReport(instId: string) {
     polls,
     news,
     galleries,
+    availableClasses: allClasses.map(c => c.class),
+    availableEkskuls: allEkskuls.map(e => e.name),
   }
 }
 

@@ -201,15 +201,6 @@ model Extracurricular {
   institutionId String
   teacherId     String?
 
-  // ===== Pengaturan tampilan Struktur Organisasi ekskul =====
-  // mode: "cards" (buat dari aplikasi: kartu foto+nama+kelas+jabatan)
-  //       | "image" (upload desain jadi, mis. dari Canva)
-  structureMode     String  @default("cards")
-  // URL gambar desain struktur (dipakai saat mode = image)
-  structureImageUrl String?
-  // Tema tampilan kartu: "indigo" | "sunset" | "forest"
-  structureTheme    String  @default("indigo")
-
   institution Institution      @relation(fields: [institutionId], references: [id])
   teacher     Teacher?         @relation(fields: [teacherId], references: [id])
   members     Member[]
@@ -270,6 +261,15 @@ model Schedule {
   latitude  Float?
   longitude Float?
   radius    Int?    @default(200)
+
+  // Durasi QR absensi otomatis (menit). 0 = nonaktifkan auto-generate.
+  // Saat jadwal aktif, QR akan dibuat otomatis dengan masa berlaku sesuai durasi ini.
+  qrDurationMinutes Int? @default(30)
+
+  // Jendela waktu aktif QR absensi otomatis (dari jam – sampai jam, format HH:MM).
+  // Kosong → mengikuti jam mulai/selesai jadwal (timeStart/timeEnd).
+  qrActiveFrom  String?
+  qrActiveUntil String?
 
   extracurricular Extracurricular @relation(fields: [extracurricularId], references: [id])
   institution     Institution     @relation(fields: [institutionId], references: [id])
@@ -393,6 +393,8 @@ model News {
   content           String
   isPublic          Boolean  @default(false)
   author            String
+  // Foto sampul berita (opsional) — tampil di daftar & detail berita.
+  coverImage        String?
   extracurricularId String
   institutionId     String
   createdById       String?
@@ -416,6 +418,8 @@ model Gallery {
   date              DateTime @default(now())
   color             String   @default("#4A9E9E")
   imageCount        Int      @default(0)
+  // Nama pengunggah album (ditampilkan di kartu galeri).
+  author            String?
   extracurricularId String
   institutionId     String
   createdAt         DateTime @default(now())
@@ -633,11 +637,15 @@ model Agenda {
   // Jabatan bebas/custom (contoh: Ketua, Wakil Ketua, Sekretaris, Bendahara, ...)
   model BoardPosition {
     id                String   @id @default(cuid())
+    // Jenis isi grid struktur: "person" (kartu pengurus) | "image" (potongan desain Canva/gambar)
+    type              String   @default("person")
     name              String
     // Kelas pengurus (contoh: XI IPA 1) — ditampilkan di kartu struktur.
     className         String?
     position          String
     photoUrl          String?
+    // URL gambar desain (dipakai saat type = "image")
+    imageUrl          String?
     sortOrder         Int      @default(0)
     extracurricularId String
     institutionId     String

@@ -1,6 +1,7 @@
-import XLSX from 'xlsx'
 import { prisma } from '~~/server/utils/prisma'
 import { hash } from 'bcrypt-ts'
+
+// xlsx diimpor dinamis agar tidak ikut dimuat saat server start.
 
 // Normalisasi kolom Role dari template: Admin / Operator / Siswa.
 const ROLE_MAP: Record<string, string> = {
@@ -25,11 +26,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'File tidak valid.' })
   }
 
-  let wb: XLSX.WorkBook
+  const XLSX = (await import('xlsx')).default
+  let wb: import('xlsx').WorkBook
   try {
-    wb = XLSX.read(fileField.data, { type: 'buffer' })
+    // File .csv dibaca sebagai teks, .xlsx/.xls sebagai buffer.
+    const isCsv = fileField.filename?.toLowerCase().endsWith('.csv')
+    wb = isCsv
+      ? XLSX.read(fileField.data.toString('utf8'), { type: 'string' })
+      : XLSX.read(fileField.data, { type: 'buffer' })
   } catch {
-    throw createError({ statusCode: 400, message: 'File bukan Excel yang valid. Gunakan template .xlsx yang disediakan.' })
+    throw createError({ statusCode: 400, message: 'File bukan Excel/CSV yang valid. Gunakan template .xlsx yang disediakan.' })
   }
 
   const sheet = wb.Sheets[wb.SheetNames[0]!]
@@ -43,7 +49,7 @@ export default defineEventHandler(async (event) => {
 
   // Muat data acuan instansi sekali untuk validasi cepat tiap baris.
   const [students, ekskuls, existingUsers] = await Promise.all([
-    prisma.student.findMany({ where: { institutionId: auth.institutionId }, select: { id: true, nis: true, name: true } }),
+    prisma.student.findMany({ where: { institutionId: auth.institutionId }, select: { id: true, nis: true, name: true, class: true } }),
     prisma.extracurricular.findMany({ where: { institutionId: auth.institutionId }, select: { id: true, name: true } }),
     prisma.user.findMany({ where: { institutionId: auth.institutionId }, select: { username: true, studentId: true } }),
   ])
@@ -65,10 +71,11 @@ export default defineEventHandler(async (event) => {
     const nis = cell(r, 1)
     let username = cell(r, 2)
     let name = cell(r, 3)
-    const password = cell(r, 4)
-    const ekskulName = cell(r, 5)
-    const phone = cell(r, 6)
-    const email = cell(r, 7)
+    const kelas = cell(r, 4)
+    const password = cell(r, 5)
+    const ekskulName = cell(r, 6)
+    const phone = cell(r, 7)
+    const email = cell(r, 8)
 
     // Lewati baris kosong / baris contoh template yang tidak diisi.
     if (!rawRole && !name && !username && !nis) continue
@@ -99,6 +106,10 @@ export default defineEventHandler(async (event) => {
       studentId = student.id
       if (!username) username = nis
       if (!name) name = student.name
+      // Kolom Kelas opsional — jika diisi, kelas siswa di Data Siswa ikut diperbarui.
+      if (kelas && student.class !== kelas) {
+        await prisma.student.update({ where: { id: student.id }, data: { class: kelas } })
+      }
     }
 
     if (role === 'operator') {

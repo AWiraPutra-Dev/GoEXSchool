@@ -52,6 +52,7 @@ export default defineEventHandler(async (event) => {
     phone: u.phone,
     email: u.email,
     status: u.status,
+    lastLogin: u.lastLogin,
     permissions: u.permissions,
     nis: u.student?.nis ?? null,
     class: u.student?.class ?? null

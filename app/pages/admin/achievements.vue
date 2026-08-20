@@ -5,17 +5,33 @@ const ui = useUiStore()
 const siswa = useSiswaDataStore()
 const admin = useMasterDataStore()
 const { confirm } = useConfirm()
-onMounted(() => { siswa.fetchAchievements(); admin.fetchReference() })
+onMounted(() => { siswa.fetchAchievements(); admin.fetchReference(); fetchStudents() })
+
+// ---- Daftar siswa untuk form tambah ----
+const students = ref<any[]>([])
+async function fetchStudents() {
+  try {
+    students.value = await $fetch<any[]>('/api/admin/students')
+  } catch {}
+}
 
 const search = ref('')
+const filterType = ref('')
+const filterLevel = ref('')
+
 const filteredAchievements = computed(() => {
-  const q = search.value.toLowerCase()
-  if (!q) return siswa.achievements
-  return siswa.achievements.filter((a: any) =>
-    (a.title || '').toLowerCase().includes(q) ||
-    (a.studentName || '').toLowerCase().includes(q) ||
-    (a.ekskul || '').toLowerCase().includes(q)
-  )
+  let list = siswa.achievements
+  if (filterType.value) list = list.filter((a: any) => a.type === filterType.value)
+  if (filterLevel.value) list = list.filter((a: any) => a.level === filterLevel.value)
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    list = list.filter((a: any) =>
+      (a.title || '').toLowerCase().includes(q) ||
+      (a.studentName || '').toLowerCase().includes(q) ||
+      (a.ekskul || '').toLowerCase().includes(q)
+    )
+  }
+  return list
 })
 const { page, paged, totalPages } = usePagination(() => filteredAchievements.value)
 
@@ -24,10 +40,32 @@ const selected = ref<any>(null)
 function openDetail(a: any) { selected.value = a }
 function closeDetail() { selected.value = null }
 
+// ---- Tambah Portofolio Prestasi ----
+const showAddModal = ref(false)
+const saving = ref(false)
+const addForm = reactive({
+  studentId: '', title: '', description: '', date: '', type: 'juara', extracurricularId: '', level: 'sekolah', proof: '',
+})
+
+function openAdd() {
+  addForm.studentId = ''; addForm.title = ''; addForm.description = ''; addForm.date = ''
+  addForm.type = 'juara'; addForm.extracurricularId = ''; addForm.level = 'sekolah'; addForm.proof = ''
+  showAddModal.value = true
+}
+
+async function saveAdd() {
+  if (!addForm.studentId || !addForm.title || !addForm.extracurricularId) return
+  saving.value = true
+  try {
+    await siswa.addAchievementAdmin({ ...addForm })
+    showAddModal.value = false
+  } finally {
+    saving.value = false
+  }
+}
+
 // ---- Edit & hapus (khusus admin) ----
 const showEditModal = ref(false)
-const saving = ref(false)
-const deletingId = ref<string | null>(null)
 const editForm = reactive({ id: '', title: '', description: '', date: '', type: 'juara', extracurricularId: '', level: 'sekolah', proof: '' })
 
 function openEdit(a: any) {
@@ -71,19 +109,14 @@ async function removeAchievement(a: any) {
     danger: true,
   })
   if (!ok) return
-  deletingId.value = a.id
   try {
     await siswa.deleteAchievementAdmin(a.id)
     if (selected.value?.id === a.id) closeDetail()
-  } finally {
-    deletingId.value = null
-  }
+  } finally {}
 }
 
 const typeLabels: Record<string, string> = { juara: 'Juara', sertifikat: 'Sertifikat', partisipasi: 'Partisipasi', organisasi: 'Organisasi' }
 const levelLabels: Record<string, string> = { sekolah: 'Sekolah', kecamatan: 'Kecamatan', kota: 'Kota', provinsi: 'Provinsi', nasional: 'Nasional' }
-const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', sertifikat: 'var(--teal)', partisipasi: 'var(--green-soft)', organisasi: 'var(--olive-primary)' }
-const levelColors: Record<string, string> = { sekolah: 'var(--teal)', kecamatan: 'var(--teal-mid)', kota: 'var(--yellow-cream)', provinsi: 'var(--orange)', nasional: 'var(--red-orange)' }
 
 function initials(name: string) {
   return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -92,20 +125,41 @@ function initials(name: string) {
 
 <template>
   <div class="space-y-4">
-    <h1 class="page-title">{{ ui.t('menu.achievements') }}</h1>
-    <p class="text-[13px]" style="color: var(--text-secondary);">{{ siswa.achievements.length }} total prestasi siswa</p>
+    <div class="page-top">
+      <div>
+        <h1 class="page-title">{{ ui.t('menu.achievements') }}</h1>
+        <p class="text-[12px]" style="color: var(--text-secondary);">{{ siswa.achievements.length }} total prestasi siswa</p>
+      </div>
+      <button class="btn-add" @click="openAdd">
+        <Icon name="i-lucide-plus" class="w-4 h-4" /> Tambah Portofolio
+      </button>
+    </div>
 
-    <div class="table-toolbar">
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <span class="filter-label">Jenis:</span>
+        <button class="filter-btn" :class="{ active: !filterType }" @click="filterType = ''">Semua</button>
+        <button class="filter-btn" :class="{ active: filterType === 'partisipasi' }" @click="filterType = 'partisipasi'">Partisipasi</button>
+        <button class="filter-btn" :class="{ active: filterType === 'juara' }" @click="filterType = 'juara'">Juara</button>
+        <button class="filter-btn" :class="{ active: filterType === 'sertifikat' }" @click="filterType = 'sertifikat'">Sertifikat</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Tingkat:</span>
+        <button class="filter-btn" :class="{ active: !filterLevel }" @click="filterLevel = ''">Semua</button>
+        <button class="filter-btn" :class="{ active: filterLevel === 'nasional' }" @click="filterLevel = 'nasional'">Nasional</button>
+        <button class="filter-btn" :class="{ active: filterLevel === 'kota' }" @click="filterLevel = 'kota'">Kota</button>
+        <button class="filter-btn" :class="{ active: filterLevel === 'provinsi' }" @click="filterLevel = 'provinsi'">Provinsi</button>
+      </div>
       <input v-model="search" type="text" placeholder="Cari judul, siswa, atau ekskul..." class="search-input">
     </div>
 
     <div class="achievements-grid">
       <div v-for="a in paged" :key="a.id" class="achievement-card" @click="openDetail(a)">
-        <!-- Foto dokumentasi / sertifikat -->
         <div v-if="a.proof" class="ach-photo">
           <img :src="a.proof" :alt="a.title" loading="lazy" />
         </div>
-        <div v-else class="ach-photo ach-photo-empty" :style="{ background: typeColors[a.type] + '25', color: typeColors[a.type] }">
+        <div v-else class="ach-photo ach-photo-empty">
           <Icon name="i-lucide-image-off" class="w-8 h-8" />
           <span>Belum ada foto</span>
         </div>
@@ -113,16 +167,15 @@ function initials(name: string) {
         <div class="ach-body">
           <div class="ach-top">
             <div class="ach-badges">
-              <span class="ach-type-badge" :style="{ background: typeColors[a.type] + '20', color: typeColors[a.type] }">{{ typeLabels[a.type] }}</span>
-              <span class="ach-level-badge" :style="{ background: levelColors[a.level] + '20', color: levelColors[a.level] }">{{ levelLabels[a.level] }}</span>
+              <span class="ach-type-badge">{{ typeLabels[a.type] || a.type }}</span>
+              <span class="ach-level-badge">{{ levelLabels[a.level] || a.level }}</span>
             </div>
           </div>
           <h3 class="ach-title">{{ a.title }}</h3>
           <p class="ach-desc">{{ a.description }}</p>
 
-          <!-- Siswa & kelas -->
           <div class="ach-student">
-            <span class="ach-student-avatar" :style="{ background: typeColors[a.type] }">{{ initials(a.studentName || '?') }}</span>
+            <span class="ach-student-avatar">{{ initials(a.studentName || '?') }}</span>
             <span class="ach-student-info">
               <span class="ach-student-name">{{ a.studentName || '-' }}</span>
               <span class="ach-student-class">{{ a.studentClass ? 'Kelas ' + a.studentClass : '' }}</span>
@@ -134,9 +187,8 @@ function initials(name: string) {
             <span class="ach-date">{{ a.date }}</span>
             <div class="ach-actions">
               <button @click.stop="openEdit(a)" title="Edit" class="ach-action-btn"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
-              <button @click.stop="removeAchievement(a)" title="Hapus" class="ach-action-btn" style="color: var(--text-red);" :disabled="deletingId === a.id">
-                <Icon v-if="deletingId === a.id" name="i-lucide-loader-2" class="w-4 h-4 spin-icon" />
-                <Icon v-else name="i-lucide-trash-2" class="w-4 h-4" />
+              <button @click.stop="removeAchievement(a)" title="Hapus" class="ach-action-btn danger">
+                <Icon name="i-lucide-trash-2" class="w-4 h-4" />
               </button>
             </div>
             <span class="ach-view-hint">
@@ -154,6 +206,66 @@ function initials(name: string) {
 
     <PaginationBar v-model:page="page" :total="filteredAchievements.length" />
 
+    <!-- Modal Tambah -->
+    <Teleport to="body">
+      <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
+        <div class="modal-content" style="width: 560px;">
+          <div class="modal-head">
+            <h3 class="modal-title">Tambah Portofolio Prestasi</h3>
+            <button class="modal-close" @click="showAddModal = false" title="Tutup"><Icon name="i-lucide-x" class="w-5 h-5" /></button>
+          </div>
+          <form @submit.prevent="saveAdd" class="space-y-3">
+            <div class="form-group">
+              <label>Siswa</label>
+              <select v-model="addForm.studentId" class="form-input" required>
+                <option disabled value="">Pilih Siswa</option>
+                <option v-for="s in students" :key="s.id" :value="s.id">{{ s.name }} ({{ s.nis }})</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Judul Prestasi</label><input v-model="addForm.title" class="form-input" required placeholder="Contoh: Juara 2 Basket Kota Bandung"></div>
+            <div class="form-group"><label>Deskripsi</label><textarea v-model="addForm.description" class="form-input" rows="2"></textarea></div>
+            <div class="form-row">
+              <div class="form-group"><label>Tanggal</label><input v-model="addForm.date" type="date" class="form-input" required></div>
+              <div class="form-group"><label>Ekskul</label>
+                <select v-model="addForm.extracurricularId" class="form-input" required>
+                  <option disabled value="">Pilih Ekskul</option>
+                  <option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Jenis</label>
+                <select v-model="addForm.type" class="form-input">
+                  <option value="juara">Juara</option>
+                  <option value="sertifikat">Sertifikat</option>
+                  <option value="partisipasi">Partisipasi</option>
+                  <option value="organisasi">Organisasi</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Tingkat</label>
+                <select v-model="addForm.level" class="form-input">
+                  <option value="sekolah">Sekolah</option>
+                  <option value="kecamatan">Kecamatan</option>
+                  <option value="kota">Kota</option>
+                  <option value="provinsi">Provinsi</option>
+                  <option value="nasional">Nasional</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group"><label>URL Foto Bukti (opsional)</label><input v-model="addForm.proof" class="form-input" placeholder="https://..."></div>
+            <div class="modal-actions">
+              <button type="button" class="btn-outline" @click="showAddModal = false">Batal</button>
+              <button type="submit" class="btn-cancel" :disabled="saving">
+                <Icon v-if="saving" name="i-lucide-loader-2" class="w-4 h-4 spin-icon" />
+                <Icon v-else name="i-lucide-check" class="w-4 h-4" />
+                Simpan
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Modal Detail -->
     <Teleport to="body">
       <div v-if="selected" class="modal-overlay" @click.self="closeDetail">
@@ -165,15 +277,15 @@ function initials(name: string) {
 
           <div class="detail-photo">
             <img v-if="selected.proof" :src="selected.proof" :alt="selected.title" />
-            <div v-else class="detail-photo-empty" :style="{ background: typeColors[selected.type] + '25', color: typeColors[selected.type] }">
+            <div v-else class="detail-photo-empty">
               <Icon name="i-lucide-image-off" class="w-10 h-10" />
               <span>Belum ada foto dokumentasi</span>
             </div>
           </div>
 
           <div class="detail-badges">
-            <span class="ach-type-badge" :style="{ background: typeColors[selected.type] + '20', color: typeColors[selected.type] }">{{ typeLabels[selected.type] }}</span>
-            <span class="ach-level-badge" :style="{ background: levelColors[selected.level] + '20', color: levelColors[selected.level] }">{{ levelLabels[selected.level] }}</span>
+            <span class="ach-type-badge">{{ typeLabels[selected.type] || selected.type }}</span>
+            <span class="ach-level-badge">{{ levelLabels[selected.level] || selected.level }}</span>
           </div>
 
           <h3 class="detail-title">{{ selected.title }}</h3>
@@ -267,9 +379,19 @@ function initials(name: string) {
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
-.table-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; }
-.search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); width: 280px; color: var(--text-primary); background: var(--bg-card); }
-.search-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
+.page-top { display: flex; align-items: center; justify-content: space-between; }
+.btn-add { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; }
+.btn-add:hover { background: var(--olive-dark); }
+
+/* Filter bar */
+.filter-bar { display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; flex-wrap: wrap; }
+.filter-group { display: flex; align-items: center; gap: 4px; }
+.filter-label { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-secondary); margin-right: 4px; }
+.filter-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border-light); background: white; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.filter-btn.active { background: var(--olive-primary); color: white; border-color: var(--olive-primary); }
+.search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); width: 240px; color: var(--text-primary); background: var(--bg-card); margin-left: auto; }
+.search-input:focus { outline: none; border-color: var(--olive-primary); }
+
 .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
 .achievement-card {
   background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 10px;
@@ -277,7 +399,6 @@ function initials(name: string) {
 }
 .achievement-card:hover { box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1); transform: translateY(-2px); }
 
-/* Foto */
 .ach-photo { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: var(--bg-main); }
 .ach-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
 .achievement-card:hover .ach-photo img { transform: scale(1.03); }
@@ -285,14 +406,13 @@ function initials(name: string) {
 
 .ach-body { padding: 16px 20px 20px; }
 .ach-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-.ach-badges { display: flex; gap: 4px; flex-wrap: wrap; }
-.ach-type-badge, .ach-level-badge { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: var(--font-medium); }
+.ach-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.ach-type-badge, .ach-level-badge { font-size: var(--text-xs); padding: 2px 8px; border-radius: 4px; font-weight: var(--font-medium); background: var(--bg-hover); color: var(--text-primary); }
 .ach-title { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 6px; }
 .ach-desc { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); margin-bottom: 12px; }
 
-/* Siswa */
 .ach-student { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-main); border-radius: 8px; margin-bottom: 12px; }
-.ach-student-avatar { width: 34px; height: 34px; border-radius: 50%; color: white; font-size: 11px; font-weight: var(--font-bold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ach-student-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--olive-primary); color: white; font-size: 12px; font-weight: var(--font-bold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ach-student-info { display: flex; flex-direction: column; min-width: 0; }
 .ach-student-name { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
 .ach-student-class { font-size: var(--text-xs); color: var(--text-muted); }
@@ -303,9 +423,8 @@ function initials(name: string) {
 .ach-actions { display: flex; gap: 4px; }
 .ach-action-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 4px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s; }
 .ach-action-btn:hover { background: var(--bg-hover); }
-.ach-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.spin-icon { animation: spin 1s linear infinite; display: inline-flex; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.ach-action-btn.danger { color: var(--red-orange); }
+.ach-action-btn.danger:hover { background: rgba(220,38,38,0.1); }
 .ach-view-hint { display: inline-flex; align-items: center; gap: 4px; color: var(--teal-mid); font-weight: var(--font-medium); }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }
 
@@ -338,4 +457,6 @@ function initials(name: string) {
 .form-group label { display: block; font-size: var(--text-sm); font-weight: var(--font-medium); margin-bottom: 4px; color: var(--text-primary); }
 .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: var(--text-sm); color: var(--text-primary); background: var(--bg-card); }
 .form-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
+.spin-icon { animation: spin 1s linear infinite; display: inline-flex; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>

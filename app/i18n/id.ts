@@ -7,6 +7,10 @@ export const id = {
   'topbar.notifications': 'Notifikasi',
   'topbar.markAllRead': 'Tandai dibaca',
   'topbar.noNotifications': 'Tidak ada notifikasi.',
+  'topbar.tagline': 'Sistem Informasi Manajemen Ekstrakurikuler, pengelolaan anggota, kehadiran, dan kegiatan secara terpusat.',
+  'topbar.appLabel': 'Aplikasi',
+  'topbar.poweredBy': 'Ditenagai oleh',
+  'topbar.logout': 'Keluar',
 
   // ===== Sidebar =====
   'menu.dashboard': 'Dashboard',

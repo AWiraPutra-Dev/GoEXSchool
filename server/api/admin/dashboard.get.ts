@@ -6,7 +6,11 @@ export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string }
   const instId = auth.institutionId
 
-  const [students, teachers, ekskuls, operators, logs, todaySchedules, genderRows, weekRecords, ekskulRows] = await Promise.all([
+  // Hitung4 bulan terakhir → ambil awal bulan paling awal
+  const now = new Date()
+  const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+
+  const [students, teachers, ekskuls, operators, logs, todaySchedules, ekskulRows, attendanceRecords] = await Promise.all([
     prisma.student.count({ where: { institutionId: instId } }),
     prisma.teacher.count({ where: { institutionId: instId } }),
     prisma.extracurricular.count({ where: { institutionId: instId } }),
@@ -22,50 +26,58 @@ export default defineEventHandler(async (event) => {
       include: { extracurricular: { select: { name: true } } },
       orderBy: { timeStart: 'asc' },
     }),
-    // Distribusi gender
-    prisma.student.groupBy({
-      by: ['gender'],
-      where: { institutionId: instId },
-      _count: { _all: true },
-    }),
-    // Kehadiran 4 minggu terakhir
-    prisma.attendanceRecord.findMany({
-      where: {
-        extracurricular: { institutionId: instId },
-        date: { gte: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000) },
-      },
-      select: { date: true, status: true },
-    }),
     // Anggota per ekskul
     prisma.extracurricular.findMany({
       where: { institutionId: instId },
       select: { name: true, _count: { select: { members: true } } },
       orderBy: { name: 'asc' },
     }),
+    // Kehadiran per ekskul 4 bulan terakhir
+    prisma.attendanceRecord.findMany({
+      where: {
+        extracurricular: { institutionId: instId },
+        date: { gte: fourMonthsAgo },
+      },
+      select: {
+        date: true,
+        status: true,
+        extracurricular: { select: { id: true, name: true } },
+      },
+    }),
   ])
 
-  const genderMap: Record<string, number> = {}
-  for (const g of genderRows) {
-    const key = g.gender === 'L' ? 'Laki-laki' : g.gender === 'P' ? 'Perempuan' : g.gender
-    genderMap[key] = (genderMap[key] || 0) + g._count._all
+  // Bangun label 4 bulan terakhir (mis: "Jan 2026", "Feb 2026", dll.)
+  const monthLabels: string[] = []
+  const monthKeys: string[] = [] // "YYYY-MM"
+  for (let i = 3; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    monthLabels.push(d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }))
+    monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
 
-  // Tren kehadiran: 4 minggu → persentase hadir per minggu
-  const weeks: { label: string; hadir: number; total: number }[] = []
-  for (let w = 3; w >= 0; w--) {
-    const start = new Date()
-    start.setDate(start.getDate() - start.getDay() - w * 7)
-    const end = new Date(start)
-    end.setDate(end.getDate() + 6)
-    const records = weekRecords.filter(r => {
-      const d = new Date(r.date)
-      return d >= start && d <= end
-    })
-    weeks.push({
-      label: `Mgg ${4 - w}`,
-      hadir: records.filter(r => r.status === 'hadir').length,
-      total: records.length,
-    })
+  // Hitung kehadiran (hadir / total) per ekskul per bulan
+  const ekskulAttendanceMap: Record<string, Record<string, { hadir: number; total: number }>> = {}
+  for (const r of attendanceRecords) {
+    const eName = r.extracurricular.name
+    if (!ekskulAttendanceMap[eName]) ekskulAttendanceMap[eName] = {}
+    const d = new Date(r.date)
+    const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    if (!ekskulAttendanceMap[eName][mk]) ekskulAttendanceMap[eName][mk] = { hadir: 0, total: 0 }
+    ekskulAttendanceMap[eName][mk].total++
+    if (r.status === 'hadir') ekskulAttendanceMap[eName][mk].hadir++
+  }
+
+  // Format untuk frontend: { labels: ['Nama Ekskul'], months: [{ label, data: number[] }] }
+  const ekskulNames = Object.keys(ekskulAttendanceMap).sort()
+  const ekskulAttendance = {
+    labels: ekskulNames,
+    months: monthLabels,
+    data: ekskulNames.map(name =>
+      monthKeys.map(mk => {
+        const m = ekskulAttendanceMap[name]?.[mk]
+        return m && m.total > 0 ? Math.round((m.hadir / m.total) * 100) : 0
+      })
+    ),
   }
 
   return {
@@ -91,18 +103,7 @@ export default defineEventHandler(async (event) => {
       timestamp: l.createdAt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     })),
     charts: {
-      gender: {
-        labels: ['Laki-laki', 'Perempuan'],
-        data: [genderMap['Laki-laki'] || 0, genderMap['Perempuan'] || 0],
-      },
-      attendanceTrend: {
-        labels: weeks.map(w => w.label),
-        data: weeks.map(w => (w.total ? Math.round((w.hadir / w.total) * 100) : 0)),
-      },
-      ekskulMembers: {
-        labels: ekskulRows.map(e => e.name),
-        data: ekskulRows.map(e => e._count.members),
-      },
+      ekskulAttendance,
     },
   }
 })

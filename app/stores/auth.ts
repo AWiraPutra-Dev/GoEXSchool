@@ -27,7 +27,7 @@ export interface AuthUser {
   class?: string
   /** Operator ekskul: ekskul yang dikelola (null = operator umum / bukan operator) */
   extracurricular?: { id: string; name: string } | null
-  /** Hak akses tambahan (contoh: 'structure' = boleh mengelola struktur ekskul) */
+  /** Hak akses tambahan per fitur (lihat app/utils/permissions.ts) */
   permissions?: string[]
 }
 

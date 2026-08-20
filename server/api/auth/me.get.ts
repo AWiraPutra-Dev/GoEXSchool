@@ -1,5 +1,6 @@
 import { prisma } from '~~/server/utils/prisma'
 import { toInstitutionSummary } from '~~/server/utils/institution'
+import { normalizePerm } from '~~/app/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { userId: string }
@@ -31,7 +32,7 @@ export default defineEventHandler(async (event) => {
       phone: user.phone,
       avatar: user.avatarUrl || null,
       extracurricular: user.extracurricularOperator ? { id: user.extracurricularOperator.id, name: user.extracurricularOperator.name } : null,
-      permissions: user.permissions.map(p => p.permissionId)
+      permissions: user.permissions.map(p => normalizePerm(p.permissionId))
     },
     institution: toInstitutionSummary(user.institution)
   }

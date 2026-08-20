@@ -25,6 +25,11 @@ const filteredEkskul = computed(() => {
 })
 const { page, paged, totalPages } = usePagination(() => filteredEkskul.value)
 
+// Klik kartu ekskul → langsung ke data anggota ekskul tersebut.
+function goToMembers(e: Ekskul) {
+  navigateTo({ path: '/admin/members', query: { ekskul: e.id } })
+}
+
 function openAdd() { editMode.value = false; Object.assign(form, { id: '', name: '', quota: 20, scheduleInfo: '', description: '', logoUrl: null }); showModal.value = true }
 function openEdit(e: Ekskul) { editMode.value = true; form.id = e.id; form.name = e.name; form.quota = e.quota; form.scheduleInfo = e.scheduleInfo || ''; form.description = e.description || ''; form.logoUrl = (e as any).logoUrl || null; showModal.value = true }
 async function save() {
@@ -80,8 +85,8 @@ async function removeEkskul(e: any) {
     <div class="table-toolbar">
       <input v-model="search" type="text" placeholder="Cari nama atau pembina..." class="search-input">
     </div>
-    <div class="ekskul-grid">
-      <div v-for="e in paged" :key="e.id" class="ekskul-card">
+<div class="ekskul-grid">
+      <div v-for="e in paged" :key="e.id" class="ekskul-card" @click="goToMembers(e)">
         <div class="ekskul-card-header">
           <div class="ekskul-head-left">
             <div v-if="(e as any).logoUrl" class="ekskul-logo">
@@ -92,17 +97,21 @@ async function removeEkskul(e: any) {
               <p class="ekskul-coach">{{ e.coach }}</p>
             </div>
           </div>
-          <div class="ekskul-actions"><button @click="openEdit(e)" title="Edit" style="background:none;border:none;cursor:pointer;padding:2px 6px;display:inline-flex;align-items:center;"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
-             <button @click="removeEkskul(e)" title="Hapus" :disabled="deletingId === e.id" style="background:none;border:none;cursor:pointer;padding:2px 6px;color:var(--text-red);display:inline-flex;align-items:center;">
-               <Icon v-if="deletingId === e.id" name="i-lucide-loader-2" class="w-4 h-4 spin-icon" />
-               <Icon v-else name="i-lucide-trash-2" class="w-4 h-4" />
-             </button>
+<div class="ekskul-actions" @click.stop>
+            <button class="action-btn" @click="openEdit(e)" title="Edit"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
+            <button class="action-btn danger" @click="removeEkskul(e)" title="Hapus" :disabled="deletingId === e.id">
+              <Icon v-if="deletingId === e.id" name="i-lucide-loader-2" class="w-4 h-4 spin-icon" />
+              <Icon v-else name="i-lucide-trash-2" class="w-4 h-4" />
+            </button>
           </div>
         </div>
         <p class="ekskul-desc">{{ e.description }}</p>
         <p class="ekskul-schedule"><Icon name="i-lucide-clock" class="w-3.5 h-3.5" /> {{ e.scheduleInfo || e.schedule }}</p>
         <div class="progress-bar"><div class="progress-fill" :style="{ width: `${(e.members / e.quota) * 100}%` }"></div></div>
-        <p class="ekskul-count">{{ e.members }}/{{ e.quota }} anggota</p>
+        <p class="ekskul-count">
+          <Icon name="i-lucide-users" class="w-3.5 h-3.5" /> {{ e.members }}/{{ e.quota }} anggota
+          <span class="view-members-hint">· Lihat anggota</span>
+        </p>
       </div>
     </div>
     <PaginationBar v-model:page="page" :total="filteredEkskul.length" />
@@ -138,8 +147,8 @@ async function removeEkskul(e: any) {
 .search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); width: 280px; color: var(--text-primary); background: var(--bg-card); }
 .search-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
 .ekskul-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.ekskul-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); padding: 20px; transition: transform 0.2s, box-shadow 0.2s; }
-.ekskul-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.ekskul-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); padding: 20px; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+.ekskul-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-color: var(--olive-light); }
 .ekskul-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
 .ekskul-head-left { display: flex; align-items: center; gap: 12px; }
 .ekskul-logo { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border-light); background: white; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
@@ -152,8 +161,14 @@ async function removeEkskul(e: any) {
 .progress-fill { height: 100%; border-radius: 3px; background: var(--olive-primary); transition: width 0.3s ease; }
 .spin-icon { animation: spin 1s linear infinite; display: inline-flex; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.ekskul-count { font-size: var(--text-xs); color: var(--text-muted); }
+.ekskul-count { font-size: var(--text-xs); color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+.view-members-hint { color: var(--olive-primary); font-weight: var(--font-medium); }
 .ekskul-actions { display: flex; gap: 2px; font-size: 14px; }
+.action-btn { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.action-btn:hover { background: var(--bg-hover); }
+.action-btn.danger { color: var(--red-orange); }
+.action-btn.danger:hover { background: rgba(220,38,38,0.1); }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; }
 .modal-title { font-size: var(--text-lg); font-weight: var(--font-bold); margin-bottom: 20px; color: var(--text-primary); }

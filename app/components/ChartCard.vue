@@ -11,44 +11,26 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, onUnmounted } from 'vue'
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  LineController,
-  BarController,
-  DoughnutController,
-  PieController,
-  RadarController
-} from 'chart.js'
 
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-  LineController,
-  BarController,
-  DoughnutController,
-  PieController,
-  RadarController
-)
+// chart.js dimuat on-demand (hanya saat kartu grafik benar-benar dirender),
+// supaya bundle JS yang diunduh browser tidak membawa library grafik yang
+// berat di halaman-halaman tanpa grafik.
+let chartModule: Promise<typeof import('chart.js')> | null = null
+function getChartModule() {
+  if (!chartModule) {
+    chartModule = import('chart.js').then((m) => {
+      m.Chart.register(
+        m.CategoryScale, m.LinearScale, m.PointElement, m.LineElement,
+        m.BarElement, m.ArcElement, m.RadialLinearScale,
+        m.Title, m.Tooltip, m.Legend, m.Filler,
+        m.LineController, m.BarController, m.DoughnutController,
+        m.PieController, m.RadarController
+      )
+      return m
+    })
+  }
+  return chartModule
+}
 
 const props = defineProps<{
   title: string
@@ -60,15 +42,21 @@ const props = defineProps<{
     backgroundColor?: string | string[]
     borderColor?: string | string[]
     fill?: boolean
+    tension?: number
   }[]
   options?: Record<string, any>
 }>()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-let chartInstance: Chart | null = null
+let chartInstance: import('chart.js').Chart | null = null
 
-function createChart() {
-  if (!canvasRef.value) return
+// Render berjalan async (menunggu chart.js dimuat). Token mencegah render
+// basi menimpa render terbaru saat props berubah cepat.
+let renderToken = 0
+async function createChart() {
+  const token = ++renderToken
+  const m = await getChartModule()
+  if (token !== renderToken || !canvasRef.value) return
 
   if (chartInstance) {
     chartInstance.destroy()
@@ -79,7 +67,7 @@ function createChart() {
   // Font konsisten dengan aplikasi
   const uiFont = "'Segoe UI', 'Roboto', 'Open Sans', sans-serif"
 
-  chartInstance = new Chart(canvasRef.value, {
+  chartInstance = new m.Chart(canvasRef.value, {
     type: props.type === 'doughnut' ? 'doughnut' : props.type,
     data: {
       labels: props.labels,

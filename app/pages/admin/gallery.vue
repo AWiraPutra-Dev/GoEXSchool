@@ -32,7 +32,8 @@ function openGallery(g: any) { selected.value = g; showModal.value = true }
     <div class="gallery-grid">
       <div v-for="g in paged" :key="g.id" class="gallery-card" @click="openGallery(g)">
         <div class="gallery-thumb" :style="{ background: g.color }">
-          <Icon name="i-lucide-image" class="w-10 h-10 text-white/60" />
+          <img v-if="g.images?.[0]" :src="g.images[0].url" :alt="g.title" class="gallery-thumb-img" loading="lazy" />
+          <Icon v-else name="i-lucide-image" class="w-10 h-10 text-white/60" />
           <span class="gallery-count">{{ g.imageCount }} foto</span>
         </div>
         <div class="gallery-info">
@@ -45,6 +46,7 @@ function openGallery(g: any) { selected.value = g; showModal.value = true }
             <span v-else>{{ g.ekskul }}</span>
             · {{ g.date }}
           </p>
+          <p class="gallery-uploader" v-if="g.author"><Icon name="i-lucide-user" class="w-3 h-3" /> Diunggah oleh {{ g.author }}</p>
         </div>
       </div>
     </div>
@@ -58,11 +60,12 @@ function openGallery(g: any) { selected.value = g; showModal.value = true }
             <button @click="showModal = false" style="background:none;border:none;cursor:pointer;color:var(--text-muted);display:inline-flex;align-items:center;"><Icon name="i-lucide-x" class="w-5 h-5" /></button>
           </div>
           <div class="gallery-preview-grid">
-            <div v-for="i in 6" :key="i" class="preview-photo" :style="{ background: selected.color + '40' }">
-              <Icon name="i-lucide-image" class="w-6 h-6 text-white/40" />
+            <div v-for="(img, i) in selected.images" :key="i" class="preview-photo" :style="{ background: selected.color + '40' }">
+              <img v-if="img" :src="img.url" :alt="selected.title" class="preview-img" loading="lazy" />
+              <Icon v-else name="i-lucide-image" class="w-6 h-6 text-white/40" />
             </div>
           </div>
-          <p class="text-center text-[13px]" style="color:var(--text-muted);margin-top:16px;">{{ Math.min(6, selected.imageCount) }} dari {{ selected.imageCount }} foto</p>
+          <p class="text-center text-[13px]" style="color:var(--text-muted);margin-top:16px;">{{ Math.min(selected.images?.length || 0, selected.imageCount) }} dari {{ selected.imageCount }} foto</p>
         </div>
       </div>
     </Teleport>
@@ -77,15 +80,19 @@ function openGallery(g: any) { selected.value = g; showModal.value = true }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .gallery-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden; cursor: pointer; transition: all 0.2s; }
 .gallery-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-.gallery-thumb { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; }
-.gallery-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.5); color: white; font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; }
+.gallery-thumb { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.gallery-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+.gallery-card:hover .gallery-thumb-img { transform: scale(1.05); }
+.gallery-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.5); color: white; font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; }
 .gallery-info { padding: 12px 16px; }
 .gallery-title { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
 .gallery-meta { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gallery-uploader { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--text-secondary); margin-top: 6px; }
 .ekskul-logo-chip { display: inline-flex; align-items: center; gap: 4px; }
 .ekskul-logo-img { width: 18px; height: 18px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 90vw; }
 .gallery-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.preview-photo { aspect-ratio: 4/3; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.preview-photo { aspect-ratio: 4/3; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.preview-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 8px; }
 </style>

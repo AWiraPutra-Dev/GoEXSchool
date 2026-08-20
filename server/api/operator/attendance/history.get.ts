@@ -21,6 +21,7 @@ export default defineEventHandler(async (event) => {
     return {
       id: s.id,
       date: s.date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+      dateISO: `${s.date.getFullYear()}-${String(s.date.getMonth() + 1).padStart(2, '0')}-${String(s.date.getDate()).padStart(2, '0')}`,
       ekskul: s.extracurricular.name,
       ekskulId: s.extracurricularId,
       hadir,

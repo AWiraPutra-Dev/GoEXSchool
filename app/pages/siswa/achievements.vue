@@ -12,6 +12,28 @@ const { confirm } = useConfirm()
 onMounted(() => { siswa.fetchAchievements(); admin.fetchReference() })
 const saved = ref(false)
 const form = reactive({ id: '', title: '', description: '', date: '', type: 'juara' as Achievement['type'], extracurricularId: '', level: 'sekolah' as Achievement['level'], proof: '' })
+const uploadingProof = ref(false)
+const proofInput = ref<HTMLInputElement | null>(null)
+
+async function uploadProof(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  uploadingProof.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await $fetch<{ url: string }>('/api/shared/upload', { method: 'POST', body: fd })
+    form.proof = res.url
+  } catch (err: any) {
+    alert(err?.data?.message || 'Gagal upload foto.')
+  } finally {
+    uploadingProof.value = false
+    if (proofInput.value) proofInput.value.value = ''
+  }
+}
+
+function removeProof() { form.proof = '' }
 const filterType = ref<string>('all')
 const filterLevel = ref<string>('all')
 
@@ -44,8 +66,8 @@ function openEdit(a: Achievement) {
 }
 
 function save() {
-  if (editMode.value) { siswa.updateAchievement(form.id, { title: form.title, description: form.description, date: form.date, type: form.type, extracurricularId: form.extracurricularId, level: form.level }) }
-  else { siswa.addAchievement({ title: form.title, description: form.description, date: form.date, type: form.type, extracurricularId: form.extracurricularId, level: form.level }) }
+  if (editMode.value) { siswa.updateAchievement(form.id, { title: form.title, description: form.description, date: form.date, type: form.type, extracurricularId: form.extracurricularId, level: form.level, proof: form.proof }) }
+  else { siswa.addAchievement({ title: form.title, description: form.description, date: form.date, type: form.type, extracurricularId: form.extracurricularId, level: form.level, proof: form.proof }) }
   saved.value = true
   setTimeout(() => { saved.value = false; showModal.value = false }, 800)
 }
@@ -97,23 +119,32 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
 
     <div class="achievements-grid">
       <div v-for="a in paged" :key="a.id" class="achievement-card">
-        <div class="ach-top">
-          <div class="ach-icon-wrapper" :style="{ background: typeColors[a.type] + '20', color: typeColors[a.type] }">
-            <Icon :name="a.type === 'juara' ? 'i-lucide-trophy' : a.type === 'sertifikat' ? 'i-lucide-award' : a.type === 'partisipasi' ? 'i-lucide-handshake' : 'i-lucide-users'" class="w-6 h-6" />
-          </div>
-          <div class="ach-badges">
-            <span class="ach-type-badge" :style="{ background: typeColors[a.type] + '20', color: typeColors[a.type] }">{{ typeLabels[a.type] }}</span>
-            <span class="ach-level-badge" :style="{ background: levelColors[a.level] + '20', color: levelColors[a.level] }">{{ levelLabels[a.level] }}</span>
-          </div>
+        <!-- Foto dokumentasi prestasi -->
+        <div v-if="a.proof" class="ach-photo">
+          <img :src="a.proof" :alt="a.title" loading="lazy" />
         </div>
-        <h3 class="ach-title">{{ a.title }}</h3>
-        <p class="ach-desc">{{ a.description }}</p>
-        <div class="ach-footer">
-          <span class="ach-ekskul">{{ a.ekskul }}</span>
-          <span class="ach-date">{{ a.date }}</span>
-          <div class="ach-actions">
-            <button @click="openEdit(a)" title="Edit" class="ach-action-btn"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
-            <button @click="removeAchievement(a)" title="Hapus" class="ach-action-btn" style="color: var(--text-red);"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
+        <div v-else class="ach-photo ach-photo-empty" :style="{ background: typeColors[a.type] + '25', color: typeColors[a.type] }">
+          <Icon :name="a.type === 'juara' ? 'i-lucide-trophy' : a.type === 'sertifikat' ? 'i-lucide-award' : a.type === 'partisipasi' ? 'i-lucide-handshake' : 'i-lucide-users'" class="w-8 h-8" />
+          <span>Belum ada foto</span>
+        </div>
+
+        <div class="ach-body">
+          <div class="ach-top">
+            <div class="ach-badges">
+              <span class="ach-type-badge" :style="{ background: typeColors[a.type] + '20', color: typeColors[a.type] }">{{ typeLabels[a.type] }}</span>
+              <span class="ach-level-badge" :style="{ background: levelColors[a.level] + '20', color: levelColors[a.level] }">{{ levelLabels[a.level] }}</span>
+            </div>
+          </div>
+          <h3 class="ach-title">{{ a.title }}</h3>
+          <p class="ach-desc">{{ a.description }}</p>
+          <div class="ach-footer">
+            <span class="ach-ekskul">{{ a.ekskul }}</span>
+            <span class="ach-uploader"><Icon name="i-lucide-user" class="w-3 h-3" /> {{ a.studentName || 'Saya' }}</span>
+            <span class="ach-date">{{ a.date }}</span>
+            <div class="ach-actions">
+              <button @click="openEdit(a)" title="Edit" class="ach-action-btn"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
+              <button @click="removeAchievement(a)" title="Hapus" class="ach-action-btn danger"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
+            </div>
           </div>
         </div>
       </div>
@@ -137,6 +168,21 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
             <div class="form-row">
               <div class="form-group"><label>Jenis</label><select v-model="form.type" class="form-input"><option value="juara">Juara</option><option value="sertifikat">Sertifikat</option><option value="partisipasi">Partisipasi</option><option value="organisasi">Organisasi</option></select></div>
               <div class="form-group"><label>Tingkat</label><select v-model="form.level" class="form-input"><option value="sekolah">Sekolah</option><option value="kecamatan">Kecamatan</option><option value="kota">Kota</option><option value="provinsi">Provinsi</option><option value="nasional">Nasional</option></select></div>
+            </div>
+            <div class="form-group">
+              <label>Foto Dokumentasi (opsional)</label>
+              <div class="proof-upload-row">
+                <button type="button" class="btn-upload" @click="proofInput?.click()" :disabled="uploadingProof">
+                  <Icon v-if="uploadingProof" name="i-lucide-loader-2" class="w-4 h-4 spin-icon" />
+                  <Icon v-else name="i-lucide-image-plus" class="w-4 h-4" />
+                  {{ uploadingProof ? 'Mengupload...' : (form.proof ? 'Ganti Foto' : 'Upload Foto') }}
+                </button>
+                <input ref="proofInput" type="file" accept="image/*" class="hidden-input" @change="uploadProof" />
+                <span v-if="form.proof" class="proof-ok">
+                  <Icon name="i-lucide-check" class="w-3.5 h-3.5" /> Foto siap
+                  <button type="button" class="proof-remove" @click="removeProof" title="Hapus foto"><Icon name="i-lucide-x" class="w-3.5 h-3.5" /></button>
+                </span>
+              </div>
             </div>
             <div class="modal-actions">
               <button type="button" class="btn-cancel" @click="showModal = false">Batal</button>
@@ -166,26 +212,43 @@ const typeColors: Record<string, string> = { juara: 'var(--yellow-cream)', serti
 .filter-bar { display: flex; flex-direction: column; gap: 8px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 12px 16px; }
 .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .filter-label { font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--text-muted); min-width: 50px; }
-.filter-chip { padding: 4px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: white; font-size: var(--text-xs); cursor: pointer; transition: all 0.2s; color: var(--text-secondary); }
+.filter-chip { padding: 4px 12px; border-radius: 4px; border: 1px solid var(--border-light); background: white; font-size: var(--text-xs); cursor: pointer; transition: all 0.2s; color: var(--text-secondary); }
 .filter-chip.active { background: var(--olive-primary); color: white; border-color: var(--olive-primary); }
 .filter-chip:hover:not(.active) { background: var(--bg-hover); }
 
 .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-.achievement-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 10px; padding: 20px; transition: all 0.2s; }
+.achievement-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 10px; overflow: hidden; transition: all 0.2s; }
 .achievement-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); transform: translateY(-1px); }
+.ach-photo { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: var(--bg-main); }
+.ach-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
+.achievement-card:hover .ach-photo img { transform: scale(1.03); }
+.ach-photo-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: var(--text-xs); }
+.ach-body { padding: 16px 20px 20px; }
 .ach-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
 .ach-icon-wrapper { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ach-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-.ach-type-badge, .ach-level-badge { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: var(--font-medium); }
+.ach-type-badge, .ach-level-badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: var(--font-medium); }
 .ach-title { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 6px; }
 .ach-desc { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); margin-bottom: 12px; }
 .ach-footer { display: flex; align-items: center; gap: 8px; font-size: var(--text-xs); color: var(--text-muted); padding-top: 12px; border-top: 1px solid var(--border-light); }
 .ach-ekskul { font-weight: var(--font-semibold); color: var(--olive-primary); }
+.ach-uploader { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
 .ach-date { margin-left: auto; }
 .ach-actions { display: flex; gap: 4px; }
 .ach-action-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; border-radius: 4px; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .ach-action-btn:hover { background: var(--bg-hover); }
+.ach-action-btn.danger { color: var(--red-orange); }
+.ach-action-btn.danger:hover { background: rgba(220,38,38,0.1); }
 .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: var(--text-sm); background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 8px; }
+.btn-upload { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-hover); color: var(--text-primary); font-size: var(--text-sm); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-light); cursor: pointer; transition: all 0.2s; }
+.btn-upload:hover { background: var(--olive-bg); border-color: var(--olive-light); }
+.btn-upload:disabled { opacity: 0.6; cursor: not-allowed; }
+.hidden-input { display: none; }
+.proof-upload-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.proof-ok { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: #047857; font-weight: var(--font-medium); }
+.proof-remove { background: none; border: none; cursor: pointer; color: var(--text-red); display: inline-flex; align-items: center; padding: 2px; border-radius: 4px; }
+.spin-icon { animation: spin 1s linear infinite; display: inline-flex; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; }

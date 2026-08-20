@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { prisma } from '~~/server/utils/prisma'
-import { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType } from 'docx'
 
 // Unduh TEMPLATE surat izin (kosong, siap diisi) — format .docx.
 // Bisa dipakai siswa sebagai acuan saat mengisi surat, atau dicetak & ditandatangani.
-async function loadLogoImage(pathFromRoot: string | null | undefined, heightPx: number) {
+// docx diimpor dinamis agar tidak ikut dimuat saat server start.
+async function loadLogoImage(pathFromRoot: string | null | undefined, heightPx: number, ImageRun: any) {
   if (!pathFromRoot) return null
   const clean = pathFromRoot.replace(/^\//, '')
   const filePath = join(process.cwd(), 'public', clean)
@@ -28,8 +28,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
 
+  const { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType } = await import('docx')
   const inst = await prisma.institution.findUnique({ where: { id: auth.institutionId } })
-  const logoSekolah = await loadLogoImage(inst?.logo, 90)
+  const logoSekolah = await loadLogoImage(inst?.logo, 90, ImageRun)
 
   const line = '-'.repeat(42)
   const kosong = (n = 1) => Array.from({ length: n }, () => new Paragraph({ children: [] }))

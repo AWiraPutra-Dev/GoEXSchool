@@ -3,7 +3,7 @@ import { prisma } from '~~/server/utils/prisma'
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string }
   const scope = await getOperatorScope(event)
-  const { day, date, timeStart, timeEnd, coach, location, extracurricularId, mandatory, latitude, longitude, radius } = await readBody(event)
+  const { day, date, timeStart, timeEnd, coach, location, extracurricularId, mandatory, latitude, longitude, radius, qrDuration, qrActiveFrom, qrActiveUntil } = await readBody(event)
   if (!day || !timeStart || !coach || !location || !extracurricularId) {
     throw createError({ statusCode: 400, message: 'Semua field wajib diisi.' })
   }
@@ -32,6 +32,9 @@ export default defineEventHandler(async (event) => {
       latitude: lat,
       longitude: lng,
       radius: lat != null ? Math.max(50, Math.min(2000, Number(radius) || 200)) : null,
+      qrDurationMinutes: qrDuration != null ? Math.max(0, Math.min(240, Number(qrDuration))) : 30,
+      qrActiveFrom: qrActiveFrom || null,
+      qrActiveUntil: qrActiveUntil || null,
     },
     include: { extracurricular: { select: { name: true } } },
   })
@@ -50,5 +53,8 @@ export default defineEventHandler(async (event) => {
     longitude: schedule.longitude,
     radius: schedule.radius,
     mandatory: schedule.mandatory,
+    qrDuration: schedule.qrDurationMinutes,
+    qrActiveFrom: schedule.qrActiveFrom,
+    qrActiveUntil: schedule.qrActiveUntil,
   }
 })

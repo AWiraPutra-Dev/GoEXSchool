@@ -5,6 +5,8 @@ const ui = useUiStore()
 const siswa = useSiswaDataStore()
 const selectedEkskul = ref('all')
 const expandedContent = ref<string | null>(null)
+// Materi yang sedang dilihat inline (modal viewer)
+const viewing = ref<any | null>(null)
 
 onMounted(() => siswa.fetchMaterials())
 
@@ -38,8 +40,21 @@ const fileTypeColors: Record<string, string> = {
   text: 'var(--green-soft)',
 }
 
+// Klik kartu: buka materi inline (kalau ada file) atau tampilkan konten teks
+function openMaterial(m: any) {
+  if (m.fileUrl) {
+    viewing.value = m
+  } else {
+    toggleContent(m.id)
+  }
+}
+
 function toggleContent(id: string) {
   expandedContent.value = expandedContent.value === id ? null : id
+}
+
+function closeViewer() {
+  viewing.value = null
 }
 </script>
 
@@ -47,7 +62,7 @@ function toggleContent(id: string) {
   <div class="space-y-4">
     <div>
       <h1 class="page-title">{{ ui.t('menu.materials') }}</h1>
-      <p class="text-[13px]" style="color: var(--text-secondary);">Materi dari ekstrakurikuler yang kamu ikuti</p>
+      <p class="text-[13px]" style="color: var(--text-secondary);">Materi dari ekstrakurikuler yang kamu ikuti, bisa dilihat langsung di sini</p>
     </div>
 
     <!-- Ekskul Filter -->
@@ -61,7 +76,7 @@ function toggleContent(id: string) {
 
     <!-- Materials List -->
     <div class="materials-list">
-      <div v-for="m in paged" :key="m.id" class="material-card" @click="toggleContent(m.id)">
+      <div v-for="m in paged" :key="m.id" class="material-card" @click="openMaterial(m)">
         <div class="material-main">
           <div class="material-icon" :style="{ background: fileTypeColors[m.fileType || 'link'] + '20', color: fileTypeColors[m.fileType || 'link'] }">
             <Icon :name="fileTypeIcons[m.fileType || 'link'] || 'i-lucide-file'" class="w-6 h-6" />
@@ -75,11 +90,17 @@ function toggleContent(id: string) {
             </div>
           </div>
           <div class="material-actions" @click.stop>
-            <a v-if="m.fileUrl" :href="m.fileUrl" target="_blank" class="material-download-btn" title="Buka/Downlad">
+            <!-- Video: tombol unduh saja, tanpa embed player -->
+            <a v-if="m.fileType === 'video' && m.fileUrl" :href="m.fileUrl" target="_blank" rel="noopener" class="material-download-btn" title="Unduh video">
               <Icon name="i-lucide-download" class="w-4 h-4" />
-              <span class="text-[11px]">Buka</span>
+              <span class="text-[11px]">Unduh</span>
             </a>
-            <button v-if="m.content" class="material-expand-btn" :class="{ expanded: expandedContent === m.id }">
+            <!-- File lain: lihat inline -->
+            <button v-else-if="m.fileUrl" class="material-download-btn material-view-btn" @click="openMaterial(m)" title="Lihat materi">
+              <Icon name="i-lucide-eye" class="w-4 h-4" />
+              <span class="text-[11px]">Lihat</span>
+            </button>
+            <button v-if="m.content" class="material-expand-btn" :class="{ expanded: expandedContent === m.id }" @click="toggleContent(m.id)">
               <Icon :name="expandedContent === m.id ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4" />
             </button>
           </div>
@@ -96,13 +117,16 @@ function toggleContent(id: string) {
     </div>
 
     <PaginationBar v-model:page="page" :total="filteredMaterials.length" />
+
+    <!-- Penampil materi inline -->
+    <MaterialViewer :material="viewing" @close="closeViewer" />
   </div>
 </template>
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
 .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-light); background: white; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.chip { padding: 6px 14px; border-radius: 4px; border: 1px solid var(--border-light); background: white; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
 .chip.active { background: var(--olive-primary); color: white; border-color: var(--olive-primary); }
 .chip:not(.active):hover { background: var(--bg-hover); }
 
@@ -119,6 +143,7 @@ function toggleContent(id: string) {
 .material-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .material-download-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; background: var(--olive-bg); color: var(--olive-primary); text-decoration: none; font-weight: var(--font-medium); transition: all 0.2s; }
 .material-download-btn:hover { background: var(--olive-primary); color: white; }
+.material-view-btn { border: none; cursor: pointer; font-size: var(--text-sm); }
 .material-expand-btn { width: 32px; height: 32px; border-radius: 6px; background: none; border: 1px solid var(--border-light); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.2s; }
 .material-expand-btn:hover { background: var(--bg-hover); }
 .material-expand-btn.expanded { background: var(--olive-bg); color: var(--olive-primary); border-color: var(--olive-primary); }

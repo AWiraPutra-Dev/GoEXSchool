@@ -160,7 +160,7 @@ onMounted(loadSettings)
         />
         <div class="tz-badge">
           <Icon name="i-lucide-globe" class="w-4 h-4" />
-          <span>Zona waktu terdeteksi: <b>{{ schoolZone }}</b> (UTC+{{ SCHOOL_TZ[schoolZone].offset }}) — jam aplikasi mengikuti zona ini.</span>
+          <span>Zona waktu terdeteksi: <b>{{ schoolZone }}</b> (UTC+{{ SCHOOL_TZ[schoolZone].offset }}), jam aplikasi mengikuti zona ini.</span>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn-primary" :disabled="saving">
@@ -220,8 +220,8 @@ onMounted(loadSettings)
 .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 10px 24px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; }
 .btn-primary:hover { background: var(--olive-dark); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.error-badge { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font-size: var(--text-sm); color: #dc2626; }
-.tz-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: var(--text-xs); color: var(--text-secondary); background: var(--olive-bg); border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 6px; }
+.error-badge { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; font-size: var(--text-sm); color: #dc2626; }
+.tz-badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: var(--text-xs); color: var(--text-secondary); background: var(--olive-bg); border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 4px; }
 .tz-badge b { color: var(--olive-primary); }
 :deep(.leaflet-container) { font-family: inherit; }
 </style>

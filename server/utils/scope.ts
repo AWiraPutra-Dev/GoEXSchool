@@ -54,6 +54,24 @@ export function assertScope(
   }
 }
 
+/**
+ * Validasi hak kelola Struktur Organisasi.
+ * Hanya admin/super_admin ATAU operator pemilik ekskul tsb yang boleh
+ * mengubah/menghapus struktur (siswa berprivilege TIDAK punya hak ini).
+ */
+export async function assertStructureEditor(event: any, extracurricularId?: string | null) {
+  const auth = event.context.auth
+  if (!auth) throw createError({ statusCode: 401, message: 'Unauthorized' })
+  if (auth.role === 'admin' || auth.role === 'super_admin') return
+
+  if (auth.role !== 'operator') {
+    throw createError({ statusCode: 403, message: 'Hanya admin dan operator ekskul yang dapat mengelola struktur.' })
+  }
+
+  const scope = await getOperatorScope(event)
+  assertScope(scope, extracurricularId, 'Anda hanya dapat mengelola struktur ekskul Anda sendiri.')
+}
+
 /** Filter where untuk data yang dibatasi ekskul milik operator. */
 export function scopeFilter(scope: OperatorScope, queryEkskulId?: unknown) {
   if (scope.isScoped) {

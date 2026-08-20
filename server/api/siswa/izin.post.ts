@@ -97,7 +97,8 @@ export default defineEventHandler(async (event) => {
   recipients.push(...admins.map(u => ({ userId: u.id, role: 'admin' as const })))
 
   for (const r of recipients) {
-    const link = r.role === 'student' ? '/siswa/calendar' : r.role === 'operator' ? '/operator/izin' : '/admin/izin'
+    // Fitur surat izin sudah dipindah: siswa lihat di kalender, operator/admin lihat di absensi.
+    const link = r.role === 'student' ? '/siswa/calendar' : r.role === 'operator' ? '/operator/attendance' : '/admin/attendance'
     await prisma.notification.upsert({
       where: { key: `izin:${record.id}:${r.userId}` },
       update: { title, body, link },

@@ -136,7 +136,7 @@ onMounted(async () => {
 .welcome-section { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
 .header-actions { display: flex; align-items: center; gap: 8px; }
-.date-badge { font-size: var(--text-sm); color: var(--text-secondary); background: var(--bg-card); padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-light); white-space: nowrap; }
+.date-badge { font-size: var(--text-sm); color: var(--text-secondary); background: var(--bg-card); padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border-light); white-space: nowrap; }
 .cal-link { display: inline-flex; align-items: center; gap: 6px; color: var(--olive-primary); font-weight: var(--font-semibold); text-decoration: none; }
 .cal-link:hover { background: var(--olive-bg); }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
@@ -154,10 +154,10 @@ onMounted(async () => {
 .panel-list-item:hover { background: var(--bg-hover); }
 .panel-list-item:last-child { border-bottom: none; }
 .panel-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px; color: var(--text-muted); font-size: var(--text-sm); }
-.schedule-date-box { text-align: center; background: var(--olive-bg); padding: 6px 14px; border-radius: 8px; min-width: 50px; }
-.date-day { display: block; font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+.schedule-date-box { text-align: center; background: var(--olive-bg); padding: 6px 14px; border-radius: 4px; min-width: 50px; }
+.date-day { display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
 .date-num { display: block; font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--olive-primary); }
-.status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); white-space: nowrap; }
+.status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; font-weight: var(--font-medium); white-space: nowrap; }
 .status-upcoming { background: rgba(139,148,103,0.15); color: var(--olive-primary); }
 .status-optional { background: rgba(212,192,137,0.25); color: #A8863C; }
 .activity-icon-wrapper { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

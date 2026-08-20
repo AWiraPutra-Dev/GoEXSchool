@@ -13,10 +13,12 @@ export default defineEventHandler(async (event) => {
   })
   return positions.map(p => ({
     id: p.id,
+    type: p.type,
     name: p.name,
     className: p.className,
     position: p.position,
     photoUrl: p.photoUrl,
+    imageUrl: p.imageUrl,
     sortOrder: p.sortOrder,
     ekskulId: p.extracurricularId,
     ekskul: p.extracurricular.name,

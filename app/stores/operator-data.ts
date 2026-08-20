@@ -6,6 +6,9 @@ export interface Member {
 export interface ScheduleEntry {
   id: string; day: string; date?: string | null; time: string; timeStart: string; timeEnd?: string; ekskul: string; ekskulId: string; coach: string; location: string; mandatory?: boolean
   latitude?: number | null; longitude?: number | null; radius?: number | null
+  qrDuration?: number | null
+  qrActiveFrom?: string | null
+  qrActiveUntil?: string | null
 }
 export interface PollOption {
   id?: string; label: string; votes: number
@@ -14,10 +17,10 @@ export interface Poll {
   id: string; question: string; options: PollOption[]; ekskul: string; ekskulLogo?: string | null; ekskulId: string; endDate: string; active: boolean
 }
 export interface NewsItem {
-  id: string; title: string; content: string; date: string; isPublic: boolean; ekskul: string; ekskulLogo?: string | null; ekskulId: string; author: string; displayStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  id: string; title: string; content: string; date: string; isPublic: boolean; ekskul: string; ekskulLogo?: string | null; ekskulId: string; author: string; coverImage?: string | null; displayStatus?: 'none' | 'pending' | 'approved' | 'rejected'
 }
 export interface GalleryItem {
-  id: string; title: string; ekskul: string; ekskulLogo?: string | null; ekskulId: string; date: string; color: string; imageCount: number
+  id: string; title: string; ekskul: string; ekskulLogo?: string | null; ekskulId: string; date: string; color: string; imageCount: number; author?: string | null
   images?: Array<{ id: string; url: string }>
 }
 export interface AttendanceHistoryItem {
@@ -25,12 +28,7 @@ export interface AttendanceHistoryItem {
   records?: Array<{ id: string; student: string; nis: string; class: string; status: string; time: string | null; notes: string | null }>
 }
 export interface BoardPosition {
-  id: string; name: string; className: string | null; position: string; photoUrl: string | null; sortOrder: number; ekskulId: string; ekskul: string; ekskulLogo?: string | null
-}
-/** Pengaturan tampilan Struktur Organisasi per ekskul. */
-export interface StructureSettings {
-  ekskulId: string; ekskul: string; ekskulLogo?: string | null
-  mode: 'cards' | 'image'; imageUrl: string | null; theme: string; positionCount: number
+  id: string; type: 'person' | 'image'; name: string; className: string | null; position: string; photoUrl: string | null; imageUrl?: string | null; sortOrder: number; ekskulId: string; ekskul: string; ekskulLogo?: string | null
 }
 
 export const useOperatorDataStore = defineStore('operatorData', {
@@ -44,14 +42,12 @@ export const useOperatorDataStore = defineStore('operatorData', {
     articles: [] as any[],
     materials: [] as any[],
     board: [] as BoardPosition[],
-    structures: [] as StructureSettings[],
     loading: false,
     /** Waktu terakhir data operator berhasil dimuat (untuk cache antar navigasi) */
     loadedAt: null as number | null,
     articlesLoadedAt: null as number | null,
     materialsLoadedAt: null as number | null,
     boardLoadedAt: null as number | null,
-    structuresLoadedAt: null as number | null,
   }),
 
   actions: {
@@ -81,6 +77,18 @@ export const useOperatorDataStore = defineStore('operatorData', {
         this.loadedAt = Date.now()
       } finally {
         this.loading = false
+      }
+    },
+
+    /**
+     * Muat ulang riwayat absensi saja (ringan) — dipakai polling halaman
+     * absensi supaya siswa yang baru scan langsung terlihat (efek buku tamu).
+     */
+    async refreshAttendance() {
+      try {
+        this.attendanceHistory = await $fetch<AttendanceHistoryItem[]>('/api/operator/attendance/history')
+      } catch {
+        // Abaikan — data lama tetap ditampilkan.
       }
     },
 
@@ -145,7 +153,7 @@ export const useOperatorDataStore = defineStore('operatorData', {
       this.members = this.members.filter(m => m.id !== id)
     },
 
-    async addScheduleEntry(data: { day: string; date?: string; timeStart: string; timeEnd?: string; coach: string; location: string; extracurricularId: string; mandatory?: boolean; latitude?: number | null; longitude?: number | null; radius?: number | null }) {
+    async addScheduleEntry(data: { day: string; date?: string; timeStart: string; timeEnd?: string; coach: string; location: string; extracurricularId: string; mandatory?: boolean; latitude?: number | null; longitude?: number | null; radius?: number | null; qrDuration?: number; qrActiveFrom?: string | null; qrActiveUntil?: string | null }) {
       const s = await $fetch<ScheduleEntry>('/api/operator/schedule', { method: 'POST', body: data })
       this.schedule.push(s)
     },
@@ -227,13 +235,13 @@ export const useOperatorDataStore = defineStore('operatorData', {
       } catch {}
     },
 
-    async addBoardPosition(data: { name: string; className?: string | null; position: string; photoUrl?: string | null; sortOrder?: number; extracurricularId: string }) {
+    async addBoardPosition(data: { type?: 'person' | 'image'; name?: string; className?: string | null; position?: string; photoUrl?: string | null; imageUrl?: string | null; sortOrder?: number; extracurricularId: string }) {
       const p = await $fetch<BoardPosition>('/api/operator/board', { method: 'POST', body: data })
       this.board.push(p)
       this.board.sort((a, b) => a.sortOrder - b.sortOrder)
     },
 
-    async updateBoardPosition(id: string, data: { name?: string; className?: string | null; position?: string; photoUrl?: string | null; sortOrder?: number }) {
+    async updateBoardPosition(id: string, data: { type?: 'person' | 'image'; name?: string; className?: string | null; position?: string; photoUrl?: string | null; imageUrl?: string | null; sortOrder?: number }) {
       const p = await $fetch<BoardPosition>(`/api/operator/board/${id}`, { method: 'PUT', body: data })
       const idx = this.board.findIndex(b => b.id === id)
       if (idx >= 0) this.board[idx] = p
@@ -243,23 +251,6 @@ export const useOperatorDataStore = defineStore('operatorData', {
     async deleteBoardPosition(id: string) {
       await $fetch(`/api/operator/board/${id}`, { method: 'DELETE' })
       this.board = this.board.filter(b => b.id !== id)
-    },
-
-    // ---- Pengaturan tampilan Struktur Organisasi per ekskul ----
-    async fetchStructures(force = false) {
-      if (!force && isFresh(this.structuresLoadedAt)) return
-      try {
-        this.structures = await $fetch<StructureSettings[]>('/api/operator/board/structure')
-        this.structuresLoadedAt = Date.now()
-      } catch {}
-    },
-
-    async updateStructure(ekskulId: string, data: { mode?: 'cards' | 'image'; imageUrl?: string | null; theme?: string }) {
-      const s = await $fetch<StructureSettings>(`/api/operator/board/structure/${ekskulId}`, { method: 'PUT', body: data })
-      const idx = this.structures.findIndex(x => x.ekskulId === ekskulId)
-      if (idx >= 0) this.structures[idx] = s
-      else this.structures.push(s)
-      return s
     },
 
   },

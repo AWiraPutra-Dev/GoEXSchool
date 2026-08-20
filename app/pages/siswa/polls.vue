@@ -52,7 +52,7 @@ const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
               <span class="poll-ekskul-badge">{{ poll.ekskul }}</span>
             </span>
             <span v-else class="poll-ekskul-badge">{{ poll.ekskul }}</span>
-            <span class="poll-status-badge" :class="poll.active ? 'badge-active' : 'badge-done'">{{ poll.active ? 'Berlangsung' : 'Selesai' }}</span>
+            <span class="status-dot" :class="poll.active ? 'active' : 'inactive'">{{ poll.active ? 'Berlangsung' : 'Selesai' }}</span>
           </div>
           <span class="poll-date">Berakhir {{ poll.endDate }}</span>
         </div>
@@ -71,7 +71,7 @@ const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
               <span class="result-label">{{ opt.label }}</span>
               <span class="result-stats">{{ opt.votes }} suara ({{ Math.round(getPercentage(poll, opt.votes)) }}%)</span>
             </div>
-            <div class="progress-bar"><div class="progress-fill" :style="{ width: getPercentage(poll, opt.votes) + '%', background: poll.myVote === opt.id ? 'var(--olive-primary)' : 'var(--teal)' }"></div></div>
+            <div class="progress-bar"><div class="progress-fill" :style="{ width: getPercentage(poll, opt.votes) + '%' }"></div></div>
           </div>
           <p class="poll-total">Total {{ totalVotes(poll) }} suara</p>
         </div>
@@ -104,25 +104,22 @@ const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
 .filter-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border-light); background: white; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
-.filter-btn.active { background: var(--olive-primary); color: white; border-color: var(--olive-primary); }
+.filter-btn.active { background: var(--olive-bg); color: var(--olive-primary); border-color: var(--olive-primary); }
 .filter-btn:hover:not(.active) { background: var(--bg-hover); }
 .polls-list { display: flex; flex-direction: column; gap: 16px; }
 .poll-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 20px 24px; transition: all 0.2s; }
 .poll-card:hover { border-color: var(--olive-light); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
 .poll-voted { border-left: 3px solid var(--olive-primary); }
 .poll-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-.poll-ekskul-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.poll-ekskul-badge { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: var(--font-medium); }
 .ekskul-logo-chip { display: inline-flex; align-items: center; gap: 6px; }
 .ekskul-logo-img { width: 22px; height: 22px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
-.poll-status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
-.badge-active { background: rgba(74,158,158,0.15); color: var(--teal); }
-.badge-done { background: rgba(212,106,90,0.15); color: var(--red-orange); }
 .poll-date { font-size: var(--text-xs); color: var(--text-muted); }
 .poll-question { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 16px; }
 .poll-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-.poll-option { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1.5px solid var(--border-light); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-.poll-option:hover { border-color: var(--olive-light); background: var(--olive-bg); }
-.poll-option.selected { border-color: var(--olive-primary); background: rgba(139,148,103,0.06); box-shadow: 0 0 0 3px rgba(139,148,103,0.12); }
+.poll-option { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid var(--border-light); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.poll-option:hover { border-color: var(--olive-light); }
+.poll-option.selected { border-color: var(--olive-primary); }
 .poll-radio { accent-color: var(--olive-primary); width: 18px; height: 18px; flex-shrink: 0; }
 .poll-option-label { font-size: var(--text-sm); font-weight: var(--font-medium); color: var(--text-primary); }
 .poll-results { margin-bottom: 16px; }
@@ -130,8 +127,8 @@ const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
 .result-label-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
 .result-label { font-size: var(--text-sm); font-weight: var(--font-medium); color: var(--text-primary); }
 .result-stats { font-size: var(--text-sm); color: var(--text-muted); }
-.progress-bar { width: 100%; height: 10px; border-radius: 5px; background: var(--bg-main); overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
+.progress-bar { width: 100%; height: 8px; border-radius: 4px; background: var(--bg-main); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; background: var(--olive-primary); transition: width 0.8s ease; }
 .poll-total { text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); }
 .poll-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 8px 20px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; }
@@ -139,7 +136,7 @@ const { page, paged, totalPages } = usePagination(() => filteredPolls.value)
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-outline { display: inline-flex; align-items: center; gap: 6px; background: white; color: var(--text-primary); font-size: var(--text-sm); padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-light); cursor: pointer; transition: all 0.2s; }
 .btn-outline:hover { background: var(--bg-hover); }
-.voted-badge { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); padding: 6px 12px; background: var(--olive-bg); border-radius: 6px; }
+.voted-badge { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 .voted-badge strong { color: var(--olive-primary); }
 .closed-badge { font-size: var(--text-sm); color: var(--text-muted); }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }

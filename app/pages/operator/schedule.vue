@@ -10,7 +10,7 @@ onMounted(() => { op.fetchAll(); admin.fetchReference() })
 const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 const activeDay = ref('Senin')
 const showModal = ref(false)
-const form = reactive({ day: 'Senin', date: '', timeStart: '', timeEnd: '', ekskul: '', coach: '', location: '', ekskulId: '', mandatory: true })
+const form = reactive({ day: 'Senin', date: '', timeStart: '', timeEnd: '', ekskul: '', coach: '', location: '', ekskulId: '', mandatory: true, qrEnabled: true, qrActiveFrom: '', qrActiveUntil: '' })
 // Titik lokasi geofence pertemuan (opsional). Default: kosong → ikuti sesi QR / lokasi sekolah.
 const meetingLocation = ref<{ latitude: number | null; longitude: number | null; radius: number; locationName?: string | null }>({
   latitude: null,
@@ -20,6 +20,7 @@ const meetingLocation = ref<{ latitude: number | null; longitude: number | null;
 })
 
 const filteredSchedule = computed(() => op.schedule.filter(s => s.day === activeDay.value))
+const dayDates = computed(() => [...new Set(filteredSchedule.value.map(s => s.date).filter(Boolean) as string[])].sort())
 const { page, paged, totalPages } = usePagination(() => filteredSchedule.value)
 
 function openAddSchedule() {
@@ -37,8 +38,11 @@ function addSchedule() {
     latitude: meetingLocation.value.latitude,
     longitude: meetingLocation.value.longitude,
     radius: meetingLocation.value.latitude != null ? meetingLocation.value.radius : undefined,
+    qrDuration: form.qrEnabled ? 30 : 0,
+    qrActiveFrom: form.qrEnabled && form.qrActiveFrom ? form.qrActiveFrom : null,
+    qrActiveUntil: form.qrEnabled && form.qrActiveUntil ? form.qrActiveUntil : null,
   })
-  showModal.value = false; form.timeStart = ''; form.timeEnd = ''; form.date = ''; form.ekskul = ''; form.ekskulId = ''; form.coach = ''; form.location = ''; form.mandatory = true
+  showModal.value = false; form.timeStart = ''; form.timeEnd = ''; form.date = ''; form.ekskul = ''; form.ekskulId = ''; form.coach = ''; form.location = ''; form.mandatory = true; form.qrEnabled = true; form.qrActiveFrom = ''; form.qrActiveUntil = ''
   meetingLocation.value = { latitude: null, longitude: null, radius: 200, locationName: null }
 }
 async function removeSchedule(s: any) {
@@ -50,6 +54,13 @@ async function removeSchedule(s: any) {
   })
   if (!ok) return
   op.removeScheduleEntry(s.id)
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 </script>
 
@@ -64,15 +75,23 @@ async function removeSchedule(s: any) {
       <button v-for="d in dayNames" :key="d" class="day-tab" :class="{ active: activeDay === d }" @click="activeDay = d">{{ d }}</button>
     </div>
 
+    <div class="schedule-dates" v-if="dayDates.length">
+      <span class="schedule-date-badge" v-for="d in dayDates" :key="d">
+        <Icon name="i-lucide-calendar" class="w-3.5 h-3.5" /> {{ formatDate(d) }}
+      </span>
+    </div>
+
     <div class="schedule-list">
       <div v-for="s in paged" :key="s.id" class="schedule-item">
-        <div class="schedule-date" v-if="s.date"><Icon name="i-lucide-calendar" class="w-3.5 h-3.5" /> {{ s.date }}</div>
         <div class="schedule-time">{{ s.time }}</div>
         <div class="schedule-info">
           <h4 class="font-semibold text-[13px]">{{ s.ekskul }}</h4>
           <p class="text-[12px]" style="color: var(--text-secondary);">{{ s.coach }} · {{ s.location }}</p>
           <p v-if="s.latitude != null && s.longitude != null" class="text-[11px] coord-text">
             <Icon name="i-lucide-crosshair" class="w-3 h-3" /> Titik absen: {{ s.latitude.toFixed(5) }}, {{ s.longitude.toFixed(5) }} · Radius {{ s.radius ?? 200 }} m
+          </p>
+          <p v-if="s.qrDuration != null && s.qrDuration > 0" class="text-[11px] coord-text qr-text" style="color: var(--teal);">
+            <Icon name="i-lucide-qr-code" class="w-3 h-3" /> QR otomatis {{ s.qrActiveFrom && s.qrActiveUntil ? `aktif ${s.qrActiveFrom} – ${s.qrActiveUntil}` : 'ikut jam jadwal' }}
           </p>
         </div>
         <span v-if="s.mandatory === false" class="optional-badge">Tidak Wajib</span>
@@ -111,7 +130,7 @@ async function removeSchedule(s: any) {
             <div class="loc-picker-box">
               <label class="loc-picker-label">
                 <Icon name="i-lucide-crosshair" class="w-4 h-4" />
-                Titik Lokasi Absensi Pertemuan <span class="form-optional">(opsional — kosongkan agar ikuti lokasi sesi QR / sekolah)</span>
+                Titik Lokasi Absensi Pertemuan <span class="form-optional">(opsional, kosongkan agar ikuti lokasi sesi QR / sekolah)</span>
               </label>
               <SchoolLocationPicker v-model="meetingLocation" :show-radius="true" />
               <p class="date-hint"><Icon name="i-lucide-info" class="w-3.5 h-3.5" /> Siswa hanya bisa absen di dalam titik + radius ini saat pertemuan berlangsung. Jika tidak diatur, absensi mengikuti titik yang dipilih operator saat membuat QR.</p>
@@ -120,6 +139,24 @@ async function removeSchedule(s: any) {
               <input v-model="form.mandatory" type="checkbox">
               <span>Jadwal Wajib (harus dihadiri anggota)</span>
             </label>
+            <div class="qr-settings-box">
+              <label class="mandatory-toggle">
+                <input v-model="form.qrEnabled" type="checkbox">
+                <span><Icon name="i-lucide-qr-code" class="w-4 h-4" style="color: var(--teal);" /> Aktifkan QR Absensi Otomatis</span>
+              </label>
+              <p class="date-hint" style="margin: 4px 0 10px;"><Icon name="i-lucide-info" class="w-3.5 h-3.5" /> QR + token dibuat otomatis begitu masuk jam aktif. Siswa men-scan/memasukkan token di halaman Absensi.</p>
+              <div class="form-row" v-if="form.qrEnabled">
+                <div class="form-group">
+                  <label>QR Aktif Dari <span class="form-optional">(opsional)</span></label>
+                  <input v-model="form.qrActiveFrom" type="time" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label>QR Aktif Sampai <span class="form-optional">(opsional)</span></label>
+                  <input v-model="form.qrActiveUntil" type="time" class="form-input">
+                </div>
+              </div>
+              <p v-if="form.qrEnabled" class="date-hint"><Icon name="i-lucide-info" class="w-3.5 h-3.5" /> Kosongkan untuk mengikuti jam mulai–selesai jadwal. Token berlaku hingga jam "QR Aktif Sampai" (dari jam ke jam).</p>
+            </div>
             <div class="modal-actions"><button type="button" class="btn-cancel" @click="showModal = false">Batal</button><button type="submit" class="btn-primary">Tambah</button></div>
           </form>
         </div>
@@ -138,11 +175,13 @@ async function removeSchedule(s: any) {
 .day-tab.active { background: var(--olive-primary); color: white; }
 .day-tab:not(.active):hover { background: var(--bg-hover); }
 .schedule-list { display: flex; flex-direction: column; gap: 8px; }
+.schedule-dates { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.schedule-date-badge { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 6px; padding: 5px 10px; }
 .schedule-item { display: flex; align-items: center; gap: 16px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 14px 20px; transition: all 0.2s; }
 .schedule-item:hover { border-color: var(--olive-primary); }
-.schedule-date { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--text-secondary); background: var(--bg-hover); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
-.schedule-time { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--olive-primary); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; background: var(--olive-bg); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
-.form-optional { font-size: 10px; color: var(--text-muted); font-weight: var(--font-normal); }
+.schedule-date-text { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); margin-top: 3px; }
+.schedule-time { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--olive-primary); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; background: var(--olive-bg); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 4px; white-space: nowrap; }
+.form-optional { font-size: 12px; color: var(--text-muted); font-weight: var(--font-normal); }
 .date-hint { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-muted); margin: -6px 0 10px; }
 .schedule-info { flex: 1; }
 .delete-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px; opacity: 0.5; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; }
@@ -150,7 +189,7 @@ async function removeSchedule(s: any) {
 .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: var(--text-sm); background: var(--bg-card); border-radius: 8px; border: 1px dashed var(--border-light); }
 .mandatory-toggle { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--text-primary); cursor: pointer; padding: 8px 0; }
 .mandatory-toggle input { width: 16px; height: 16px; accent-color: var(--olive-primary); }
-.optional-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(212,192,137,0.25); color: #A8863C; font-weight: var(--font-medium); white-space: nowrap; }
+.optional-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; background: rgba(212,192,137,0.25); color: #A8863C; font-weight: var(--font-medium); white-space: nowrap; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; width: 640px; max-width: 94vw; max-height: 90vh; overflow-y: auto; }
 .modal-title { font-size: var(--text-lg); font-weight: var(--font-bold); margin-bottom: 20px; color: var(--text-primary); }
@@ -160,8 +199,11 @@ async function removeSchedule(s: any) {
 .form-input:focus { outline: none; border-color: var(--olive-primary); }
 .coord-text { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
 .loc-picker-box { border: 1px solid var(--border-light); border-radius: 8px; padding: 14px; background: var(--bg-main); }
+.qr-settings-box { border: 1px solid var(--border-light); border-radius: 8px; padding: 14px; background: var(--bg-main); }
+.qr-settings-box .mandatory-toggle { padding: 0; }
 .loc-picker-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: 10px; }
-.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
-.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 4px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 4px; font-size: var(--text-sm); font-weight: var(--font-medium); }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.qr-text { margin-top: 6px; }
 </style>

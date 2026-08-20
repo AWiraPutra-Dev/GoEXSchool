@@ -12,7 +12,15 @@ const editMode = ref(false)
 const saving = ref(false)
 const form = reactive({ id: '', nip: '', name: '', subject: '', phone: '' })
 
-onMounted(() => store.fetchAll())
+const openContactId = ref<string | null>(null)
+function toggleContact(e: MouseEvent, id: string) {
+  openContactId.value = openContactId.value === id ? null : id
+}
+onMounted(() => {
+  document.addEventListener('click', () => { openContactId.value = null })
+  store.fetchAll()
+})
+onUnmounted(() => document.removeEventListener('click', () => {}))
 
 const filtered = computed(() => store.teachers.filter(t =>
   t.name.toLowerCase().includes(search.value.toLowerCase()) || t.nip.includes(search.value) || t.subject.toLowerCase().includes(search.value.toLowerCase())
@@ -49,18 +57,30 @@ async function removeTeacher(t: Teacher) {
       <button class="btn-primary" @click="openAdd"><Icon name="i-lucide-plus" class="w-4 h-4" /> Tambah Pembimbing</button>
     </div>
     <div class="table-card">
-      <div class="table-toolbar"><input v-model="search" type="text" placeholder="Cari nama, NIP, atau bidang..." class="search-input"></div>
+      <div class="table-toolbar"><input v-model="search" type="text" placeholder="Cari nama, NIP, atau ekstrakurikuler..." class="search-input"></div>
       <table class="data-table">
-        <thead><tr><th>NIP</th><th>Nama</th><th>Bidang</th><th>Telepon</th><th class="text-right">Aksi</th></tr></thead>
+        <thead><tr><th>NIP</th><th>Nama</th><th>Ekstrakurikuler</th><th>Telepon</th><th class="text-right">Aksi</th></tr></thead>
         <tbody>
           <tr v-for="t in paged" :key="t.id">
             <td><span class="nis-code">{{ t.nip }}</span></td>
             <td class="font-semibold">{{ t.name }}</td>
             <td>{{ t.subject }}</td>
-            <td style="color: var(--text-secondary);">{{ t.phone }}</td>
-            <td class="text-right action-cell">
+            <td style="color: var(--text-secondary);">
+              <div class="contact-dropdown-wrap" @click.stop>
+                <button class="contact-dropdown-btn" @click="toggleContact($event, t.id)">
+                  <Icon name="i-lucide-phone" class="w-3.5 h-3.5" />
+                  <span>{{ t.phone || t.email ? 'Kontak' : '-' }}</span>
+                </button>
+                <div v-if="openContactId === t.id" class="contact-dropdown">
+                  <div class="contact-item" v-if="t.phone"><Icon name="i-lucide-phone" class="w-3.5 h-3.5" /> {{ t.phone }}</div>
+                  <div class="contact-item" v-if="t.email"><Icon name="i-lucide-mail" class="w-3.5 h-3.5" /> {{ t.email }}</div>
+                  <div class="contact-item" v-if="!t.phone && !t.email" style="color: var(--text-muted);">-</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-center action-cell">
               <button class="action-btn" @click="openEdit(t)" title="Edit"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
-              <button class="action-btn" @click="removeTeacher(t)" title="Hapus" style="color: var(--text-red);"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
+              <button class="action-btn danger" @click="removeTeacher(t)" title="Hapus"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
             </td>
           </tr>
           <tr v-if="!filtered.length"><td colspan="6" class="text-center py-8" style="color: var(--text-muted);">Tidak ada data</td></tr>
@@ -78,7 +98,7 @@ async function removeTeacher(t: Teacher) {
               <div class="form-group"><label>Nama Lengkap</label><input v-model="form.name" class="form-input" required></div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label>Bidang / Ekskul yang Dibimbing</label><input v-model="form.subject" class="form-input" required placeholder="Contoh: Olahraga, Seni Budaya, Pramuka"></div>
+              <div class="form-group"><label>Ekstrakurikuler yang Dibimbing</label><input v-model="form.subject" class="form-input" required placeholder="Contoh: Olahraga, Seni Budaya, Pramuka"></div>
               <div class="form-group"><label>Telepon</label><input v-model="form.phone" class="form-input"></div>
             </div>
             <div class="modal-actions">
@@ -105,10 +125,17 @@ async function removeTeacher(t: Teacher) {
 .data-table th { text-align: left; padding: 10px 16px; font-weight: var(--font-semibold); background: var(--bg-main); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.3px; }
 .data-table td { padding: 10px 16px; border-top: 1px solid var(--border-light); }
 .nis-code { font-size: var(--text-xs); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; font-weight: var(--font-medium); color: var(--text-secondary); }
-.ekskul-tag { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
-.action-cell { display: flex; gap: 4px; justify-content: flex-end; }
+.ekskul-tag { font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.action-cell { display: flex; gap: 4px; justify-content: center; }
+.contact-dropdown-wrap { position: relative; }
+.contact-dropdown-btn { display: inline-flex; align-items: center; gap: 4px; background: none; border: 1px solid var(--border-light); padding: 2px 8px; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
+.contact-dropdown-btn:hover { border-color: var(--olive-primary); color: var(--olive-primary); }
+.contact-dropdown { position: absolute; top: 100%; left: 0; margin-top: 4px; width: 200px; background: var(--bg-card); border: 1px solid var(--border-light); padding: 4px; z-index: 50; }
+.contact-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: var(--text-sm); color: var(--text-primary); }
 .action-btn { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .action-btn:hover { background: var(--bg-hover); }
+.action-btn.danger { color: var(--red-orange); }
+.action-btn.danger:hover { background: rgba(220,38,38,0.1); }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; }
 .modal-title { font-size: var(--text-lg); font-weight: var(--font-bold); margin-bottom: 20px; color: var(--text-primary); }
@@ -118,5 +145,6 @@ async function removeTeacher(t: Teacher) {
 .form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: var(--text-sm); color: var(--text-primary); }
 .form-input:focus { outline: none; border-color: var(--olive-primary); }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.data-table th.text-center, .data-table td.text-center { text-align: center; }
 .text-right { text-align: right; }
 </style>

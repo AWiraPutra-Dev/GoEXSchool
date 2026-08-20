@@ -58,17 +58,23 @@ export default defineEventHandler(async (event) => {
       message: 'Tidak ada jadwal pertemuan ekskul hari ini. Absensi hanya bisa dilakukan saat ada jadwal pertemuan yang dibuat operator/admin.',
     })
   }
-  // Waktu sekarang harus berada dalam rentang jadwal (mis. 07.00–09.00).
+  // Waktu sekarang harus berada dalam rentang jadwal (mis. 07.00–09.00)
+  // atau jendela QR absensi yang diatur operator (qrActiveFrom/qrActiveUntil).
   const inWindow = applicable.some(s => {
     const start = s.timeStart || ''
     const end = s.timeEnd || start
-    return nowHm >= start && nowHm <= end
+    const qrFrom = s.qrActiveFrom || start
+    const qrUntil = s.qrActiveUntil || end
+    const sInWindow = nowHm >= start && nowHm <= end
+    const qrInWindow = nowHm >= qrFrom && nowHm <= qrUntil
+    return sInWindow || qrInWindow
   })
   if (!inWindow) {
     const w = applicable[0]!
+    const qrLabel = w.qrActiveFrom && w.qrActiveUntil ? ` / QR aktif ${w.qrActiveFrom}–${w.qrActiveUntil}` : ''
     throw createError({
       statusCode: 403,
-      message: `Saat ini belum/sudah melewati waktu pertemuan (${w.timeStart}${w.timeEnd ? '–' + w.timeEnd : ''}). Absensi hanya bisa dilakukan di dalam rentang waktu jadwal.`,
+      message: `Saat ini belum/sudah melewati waktu pertemuan (${w.timeStart}${w.timeEnd ? '–' + w.timeEnd : ''}${qrLabel}). Absensi hanya bisa dilakukan di dalam rentang waktu yang ditentukan.`,
     })
   }
 
@@ -137,6 +143,7 @@ export default defineEventHandler(async (event) => {
     status: 'Hadir',
     time: record.time,
     date: formatSchoolTimeServer(record.date, zoneLng, { day: '2-digit', month: 'short', year: 'numeric' }),
+    monthKey: record.date.toISOString().slice(0, 7),
     location: zoneName,
   }
 })

@@ -10,10 +10,10 @@ const myEkskul = computed(() => auth.myEkskul)
 
 const myEkskulLogo = computed(() => {
   if (!myEkskul.value) return null
-  return op.structures.find(s => s.ekskulId === myEkskul.value!.id)?.ekskulLogo ?? null
+  return op.board.find(b => b.ekskulId === myEkskul.value!.id)?.ekskulLogo ?? null
 })
 
-onMounted(() => { if (myEkskul.value) op.fetchStructures() })
+onMounted(() => { if (myEkskul.value) op.fetchBoard() })
 </script>
 
 <template>
@@ -21,7 +21,7 @@ onMounted(() => { if (myEkskul.value) op.fetchStructures() })
     <div>
       <h1 class="page-title">{{ ui.t('menu.board') }}</h1>
       <p class="text-[13px]" style="color: var(--text-secondary);">
-        Struktur organisasi ekskul yang kamu kelola — kartu anggota atau desain gambar, dengan pilihan tema.
+        Struktur organisasi ekskul yang kamu kelola, kelola kartu pengurus dan tampilan struktur yang dilihat semua siswa. Warna mengikuti instansi.
       </p>
     </div>
 
@@ -44,7 +44,7 @@ onMounted(() => { if (myEkskul.value) op.fetchStructures() })
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
-.scope-warning { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-radius: 10px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: var(--red-orange); font-size: var(--text-sm); font-weight: var(--font-medium); }
+.scope-warning { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-radius: 4px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: var(--red-orange); font-size: var(--text-sm); font-weight: var(--font-medium); }
 .my-ekskul-bar { display: flex; align-items: center; gap: 12px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px 16px; }
 .ekskul-logo { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; background: white; border: 1px solid var(--border-light); padding: 4px; }
 .ekskul-logo-fallback { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }

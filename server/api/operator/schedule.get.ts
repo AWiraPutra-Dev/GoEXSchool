@@ -25,5 +25,8 @@ export default defineEventHandler(async (event) => {
     longitude: s.longitude,
     radius: s.radius,
     mandatory: s.mandatory,
+    qrDuration: s.qrDurationMinutes,
+    qrActiveFrom: s.qrActiveFrom,
+    qrActiveUntil: s.qrActiveUntil,
   }))
 })

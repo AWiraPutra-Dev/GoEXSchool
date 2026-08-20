@@ -19,14 +19,14 @@ export default defineEventHandler(async (event) => {
       options: { create: options.map((o: string) => ({ label: o })) },
     },
     include: {
-      options: { select: { id: true, label: true, votesCount: true } },
+      options: { select: { id: true, label: true } },
       extracurricular: { select: { name: true } },
     },
   })
   return {
     id: poll.id,
     question: poll.question,
-    options: poll.options.map(o => ({ id: o.id, label: o.label, votes: o.votesCount })),
+    options: poll.options.map(o => ({ id: o.id, label: o.label, votes: 0 })),
     ekskul: poll.extracurricular.name,
     ekskulId: poll.extracurricularId,
     endDate: poll.endDate.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),

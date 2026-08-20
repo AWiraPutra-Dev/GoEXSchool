@@ -65,10 +65,10 @@ async function saveLogo() {
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
-.warning-card { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font-size: var(--text-sm); color: #dc2626; }
+.warning-card { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; font-size: var(--text-sm); color: #dc2626; }
 .form-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px; }
 .form-card-title { display: flex; align-items: center; gap: 8px; font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 16px; }
-.error-badge { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; font-size: var(--text-sm); color: #dc2626; margin-top: 16px; }
+.error-badge { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; font-size: var(--text-sm); color: #dc2626; margin-top: 16px; }
 .form-actions { display: flex; justify-content: flex-end; padding-top: 16px; }
 .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 10px 24px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; }
 .btn-primary:hover { background: var(--olive-dark); }

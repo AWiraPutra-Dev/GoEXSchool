@@ -101,7 +101,7 @@ const loopedItems = computed(() => [...props.items, ...props.items])
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: var(--bg-hover);
   border: 1px solid var(--border-light);
   text-decoration: none;

@@ -11,6 +11,8 @@ const saving = ref(false)
 const selectedEkskul = ref('')
 const uploadedFile = ref<{ url: string; name: string } | null>(null)
 const uploading = ref(false)
+// Materi yang sedang dilihat inline (modal viewer)
+const viewing = ref<any | null>(null)
 
 const form = reactive({
   title: '',
@@ -18,6 +20,7 @@ const form = reactive({
   extracurricularId: '',
   fileType: 'link',
   content: '',
+  linkUrl: '',
 })
 
 onMounted(() => {
@@ -46,24 +49,38 @@ const ekskulList = computed(() => {
 })
 
 function openCreate() {
-  Object.assign(form, { title: '', description: '', extracurricularId: '', fileType: 'link', content: '' })
+  Object.assign(form, { title: '', description: '', extracurricularId: '', fileType: 'link', content: '', linkUrl: '' })
   // Operator ekskul: materi otomatis untuk ekskul miliknya
   if (isScopedOperator.value && myEkskul.value) form.extracurricularId = myEkskul.value.id
   uploadedFile.value = null
   showModal.value = true
 }
 
+function openViewer(m: any) {
+  viewing.value = m
+}
+
+function closeViewer() {
+  viewing.value = null
+}
+
 async function handleFileUpload(event: Event) {
   const input = event.target as HTMLInputElement
-  if (!input.files?.length) return
-  const file = input.files[0]
+  const file = input.files?.[0]
+  if (!file) return
+  const fileType = file.type || ''
   uploading.value = true
   try {
     const fd = new FormData()
     fd.append('file', file)
     const res = await $fetch<{ url: string; filename: string }>('/api/operator/upload', { method: 'POST', body: fd })
     uploadedFile.value = { url: res.url, name: res.filename }
-    form.fileType = file.type?.includes('pdf') ? 'pdf' : file.type?.includes('image') ? 'image' : file.type?.includes('video') ? 'video' : 'document'
+    form.fileType = fileType.includes('pdf') ? 'pdf'
+      : fileType.includes('image') ? 'image'
+      : fileType.includes('video') ? 'video'
+      : fileType.includes('text') ? 'text'
+      : 'document'
+    form.linkUrl = ''
   } catch (e: any) {
     alert(e.data?.message || 'Gagal upload file.')
   } finally { uploading.value = false; input.value = '' }
@@ -71,13 +88,27 @@ async function handleFileUpload(event: Event) {
 
 async function save() {
   if (!form.title || (!form.extracurricularId)) { alert('Judul dan ekskul wajib diisi.'); return }
-  if (!uploadedFile.value && !form.content) { alert('Upload file atau isi konten terlebih dahulu.'); return }
+
+  // Link URL eksternal (materi berupa tautan)
+  if (form.linkUrl.trim()) {
+    if (!form.linkUrl.trim().startsWith('http')) {
+      alert('Link harus diawali http:// atau https://')
+      return
+    }
+    form.fileType = 'link'
+    form.content = ''
+    uploadedFile.value = null
+  } else if (!uploadedFile.value && !form.content) {
+    alert('Upload file, tempel link, atau isi konten terlebih dahulu.')
+    return
+  }
+
   saving.value = true
   try {
     await op.createMaterial({
       title: form.title,
       description: form.description,
-      fileUrl: uploadedFile.value?.url || undefined,
+      fileUrl: form.linkUrl.trim() || uploadedFile.value?.url || undefined,
       fileType: form.fileType,
       content: form.content || undefined,
       extracurricularId: form.extracurricularId,
@@ -121,7 +152,7 @@ const fileTypeColors: Record<string, string> = {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="page-title">{{ ui.t('menu.materials') }}</h1>
-        <p class="text-[13px]" style="color: var(--text-secondary);">{{ op.materials.length }} total materi</p>
+        <p class="text-[13px]" style="color: var(--text-secondary);">{{ op.materials.length }} total materi, siswa bisa melihat langsung di aplikasi</p>
       </div>
       <button class="btn-primary" @click="openCreate">
         <Icon name="i-lucide-plus" class="w-4 h-4" /> Upload Materi
@@ -151,9 +182,14 @@ const fileTypeColors: Record<string, string> = {
           </p>
         </div>
         <div class="material-actions">
-          <a v-if="m.fileUrl" :href="m.fileUrl" target="_blank" class="material-download-btn" title="Download">
+          <!-- Video: unduh saja -->
+          <a v-if="m.fileType === 'video' && m.fileUrl" :href="m.fileUrl" target="_blank" rel="noopener" class="material-download-btn" title="Unduh video">
             <Icon name="i-lucide-download" class="w-4 h-4" />
           </a>
+          <!-- File lain: lihat inline -->
+          <button v-else-if="m.fileUrl" class="material-download-btn material-view-btn" @click="openViewer(m)" title="Lihat materi">
+            <Icon name="i-lucide-eye" class="w-4 h-4" />
+          </button>
           <button class="material-delete-btn" @click="removeMaterial(m)" title="Hapus"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
         </div>
       </div>
@@ -163,6 +199,9 @@ const fileTypeColors: Record<string, string> = {
       </div>
     </div>
     <PaginationBar v-model:page="page" :total="filteredMaterials.length" />
+
+    <!-- Penampil materi inline -->
+    <MaterialViewer :material="viewing" @close="closeViewer" />
 
     <!-- Modal -->
     <Teleport to="body">
@@ -191,9 +230,9 @@ const fileTypeColors: Record<string, string> = {
             </div>
 
             <div class="form-group">
-              <label>Upload File</label>
+              <label>Upload File (PDF, gambar, video, dokumen)</label>
               <div class="file-upload-area">
-                <input type="file" class="file-input-hidden" @change="handleFileUpload" accept=".pdf,.doc,.docx,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.txt" />
+                <input type="file" class="file-input-hidden" @change="handleFileUpload" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.mp4,.webm,.txt" />
                 <div v-if="!uploading && !uploadedFile" class="file-dropzone">
                   <Icon name="i-lucide-upload" class="w-6 h-6" style="color: var(--text-muted);" />
                   <p style="font-size: var(--text-sm); color: var(--text-muted);">Klik untuk upload (PDF, gambar, video, dokumen)</p>
@@ -208,6 +247,13 @@ const fileTypeColors: Record<string, string> = {
                   <button type="button" class="file-remove-btn" @click="uploadedFile = null"><Icon name="i-lucide-x" class="w-3.5 h-3.5" /></button>
                 </div>
               </div>
+            </div>
+
+            <div class="form-divider-text">Atau</div>
+
+            <div class="form-group">
+              <label>Link Materi (URL eksternal / video)</label>
+              <input v-model="form.linkUrl" type="url" class="form-input" placeholder="https://... (tautan materi / video)">
             </div>
 
             <div class="form-divider-text">Atau</div>
@@ -253,11 +299,12 @@ const fileTypeColors: Record<string, string> = {
 .material-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .material-download-btn { width: 32px; height: 32px; border-radius: 6px; background: var(--olive-bg); color: var(--olive-primary); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.2s; }
 .material-download-btn:hover { background: var(--olive-primary); color: white; }
+.material-view-btn { border: none; cursor: pointer; }
 .material-delete-btn { width: 32px; height: 32px; border-radius: 6px; background: none; border: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0.4; transition: all 0.2s; }
 .material-delete-btn:hover { opacity: 1; background: rgba(204,68,68,0.1); }
 
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 90vw; }
+.modal-content { background: white; border-radius: 12px; padding: 24px; max-width: 90vw; max-height: 92vh; overflow-y: auto; }
 .modal-title { font-size: var(--text-lg); font-weight: var(--font-bold); margin-bottom: 20px; color: var(--text-primary); }
 .form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-group { margin-bottom: 4px; }
@@ -277,8 +324,8 @@ const fileTypeColors: Record<string, string> = {
 .loading-spinner-sm { width: 18px; height: 18px; border: 2px solid var(--border-light); border-top-color: var(--olive-primary); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .file-uploaded { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
-.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 4px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 4px; font-size: var(--text-sm); font-weight: var(--font-medium); }
 .file-remove-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; display: inline-flex; align-items: center; justify-content: center; }
 .file-remove-btn:hover { color: var(--text-red); }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }

@@ -86,7 +86,7 @@
      Setara browser zoom-out ringan: semua elemen (teks, kartu, tabel, padding)
      otomatis ikut mengecil tanpa merusak proporsinya. Ubah angkanya untuk
      menyesuaikan — 1 = ukuran normal, 0.92 = ~8% lebih kecil. */
-  zoom: 0.92;
+  zoom: 1;
 
   /* ===== Warna Aksen Tema (bisa di-custom admin, berlaku semua role) =====
      Default: Tech Indigo. Turunannya dihitung otomatis lewat color-mix. */
@@ -144,16 +144,16 @@
   /* ===== Font Family ===== */
   --font-family: 'Segoe UI', 'Roboto', 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  /* ===== Font Sizes ===== */
+  /* ===== Font Sizes — all body text at 12px ===== */
   --text-xs: 11px;
   --text-sm: 12px;
-  --text-base: 13px;
-  --text-md: 14px;
-  --text-lg: 16px;
-  --text-xl: 18px;
-  --text-2xl: 20px;
-  --text-stat: 28px;
-  --text-token: 24px;
+  --text-base: 12px;
+  --text-md: 12px;
+  --text-lg: 12px;
+  --text-xl: 12px;
+  --text-2xl: 14px;
+  --text-stat: 18px;
+  --text-token: 16px;
 
   /* ===== Font Weights ===== */
   --font-normal: 400;
@@ -179,9 +179,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== Radius halus & seragam untuk semua kotak isian =====
-   Jaminan agar setiap input/select/textarea punya sudut membulat kecil
-   yang profesional (6px) meskipun belum punya kelas styling tersendiri. */
+/* ===== Input styling minimal ===== */
 input[type='text'],
 input[type='password'],
 input[type='email'],
@@ -192,7 +190,7 @@ input[type='tel'],
 input[type='search'],
 select,
 textarea {
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 body {
@@ -201,6 +199,43 @@ body {
   font-size: var(--text-base);
   line-height: var(--leading-normal);
 }
+
+/* Global status badge: bullet dot + text, no background */
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.status-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.active::before { background: var(--teal); }
+.status-dot.inactive::before { background: var(--red-orange); }
+.status-dot.pending::before { background: var(--orange); }
+
+/* Public/Internal badge: bullet + text, no background */
+.scope-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.scope-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.scope-dot.public::before { background: var(--teal); }
+.scope-dot.internal::before { background: var(--orange); }
 
 /* ===== Loading Shimmer Animation ===== */
 @keyframes shimmer {

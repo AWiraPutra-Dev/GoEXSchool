@@ -7,8 +7,19 @@
 //   showRadius → tampilkan slider radius geofencing (default true).
 //                Untuk Pengaturan Instansi (identitas & zona waktu) cukup false.
 // Hanya berjalan di client (SSR dimatikan — aplikasi SPA murni).
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+// leaflet dimuat on-demand (hanya saat picker peta dirender) supaya bundle
+// JS yang diunduh browser tidak membawa library peta (±150 KB) di halaman
+// lain yang tidak menampilkan peta.
+let L: any = null
+let customIcon: any = null
+async function getL() {
+  if (!L) {
+    L = (await import('leaflet')).default
+    await import('leaflet/dist/leaflet.css')
+    customIcon = L.icon({ iconUrl, iconSize: [34, 44], iconAnchor: [17, 42], popupAnchor: [0, -40] })
+  }
+  return L
+}
 
 export interface SchoolLocationValue {
   latitude: number | null
@@ -26,9 +37,9 @@ const emit = defineEmits<{ (e: 'update:modelValue', v: SchoolLocationValue): voi
 const mapEl = ref<HTMLElement | null>(null)
 const mapLoading = ref(false)
 const locStatus = ref('')
-let map: L.Map | null = null
-let marker: L.Marker | null = null
-let circle: L.Circle | null = null
+let map: import('leaflet').Map | null = null
+let marker: import('leaflet').Marker | null = null
+let circle: import('leaflet').Circle | null = null
 let placed = false
 
 // ---- Pencarian tempat (geocoding) ----
@@ -40,7 +51,6 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // Marker SVG custom agar ikon Leaflet default (png) tidak hilang
 const iconUrl = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 24 24"><path fill="#4F46E5" stroke="#fff" stroke-width="1.2" d="M12 0C7 0 3 4 3 9c0 6.5 9 15 9 15s9-8.5 9-15c0-5-4-9-9-9z"/><circle cx="12" cy="9" r="3.4" fill="#fff"/></svg>`)}`
-const customIcon = L.icon({ iconUrl, iconSize: [34, 44], iconAnchor: [17, 42], popupAnchor: [0, -40] })
 
 // Koordinat default: SMKN 4 Bandung (Jl. Kliningan No. 6, Lengkong)
 const DEFAULT_LAT = -6.9047
@@ -52,7 +62,7 @@ function setMarker(lat: number, lng: number, name?: string | null, notify = true
   placed = true
   if (!marker) {
     marker = L.marker([lat, lng], { icon: customIcon, draggable: true }).addTo(map)
-    marker.on('dragend', () => {
+    marker!.on('dragend', () => {
       const p = marker!.getLatLng()
       emitValue(p.lat, p.lng)
     })
@@ -86,7 +96,7 @@ function emitValue(lat: number, lng: number, name?: string | null) {
   })
 }
 
-function onMapClick(e: L.LeafletMouseEvent) {
+function onMapClick(e: import('leaflet').LeafletMouseEvent) {
   setMarker(e.latlng.lat, e.latlng.lng)
   locStatus.value = `Lokasi ditandai: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`
 }
@@ -161,7 +171,8 @@ function useMyLocation() {
   )
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await getL()
   nextTick(() => {
     if (!mapEl.value) return
     const lat = props.modelValue.latitude ?? DEFAULT_LAT
@@ -171,7 +182,7 @@ onMounted(() => {
       attribution: '&copy; OpenStreetMap',
       maxZoom: 19,
     }).addTo(map)
-    map.on('click', onMapClick)
+    map!.on('click', onMapClick)
     // Saat mount: tampilkan marker tanpa emit, supaya parent tidak
     // ke-overwrite dengan koordinat default sebelum user memilih.
     setMarker(lat, lng, null, false)

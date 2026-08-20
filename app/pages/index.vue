@@ -24,10 +24,7 @@ onMounted(async () => {
 <template>
   <div class="loading-page">
     <div class="loading-content">
-      <div class="loading-logo">
-        <span>E</span>
-      </div>
-      <h1 class="loading-title">StudentBase</h1>
+      <img src="/logos/studentbase.svg" alt="StudentBase" class="loading-logo-img" />
       <div class="loading-spinner"></div>
       <p class="loading-text">Memuat...</p>
     </div>
@@ -53,28 +50,12 @@ onMounted(async () => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.loading-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  background: var(--olive-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 16px;
-}
-
-.loading-logo span {
-  font-size: 32px;
-  font-weight: 800;
-  color: white;
-}
-
-.loading-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 20px;
+.loading-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 24px;
 }
 
 .loading-spinner {

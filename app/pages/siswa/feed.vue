@@ -38,9 +38,6 @@ function addComment(postId: string) {
 }
 
 
-const typeIcons: Record<string, string> = {
-  announcement: 'i-lucide-megaphone', achievement: 'i-lucide-award', gallery: 'i-lucide-image', poll: 'i-lucide-vote', schedule: 'i-lucide-calendar'
-}
 const typeColors: Record<string, string> = {
   announcement: 'var(--teal)', achievement: 'var(--yellow-cream)', gallery: 'var(--green-soft)', poll: 'var(--orange)', schedule: 'var(--olive-primary)'
 }
@@ -62,13 +59,13 @@ const typeColors: Record<string, string> = {
             <div class="feed-avatar" :style="{ background: typeColors[post.type] }">{{ post.avatar }}</div>
             <div><div class="feed-author">{{ post.author }}</div><div class="feed-meta">{{ post.ekskul }} · {{ post.date }}</div></div>
           </div>
-          <div class="feed-type-badge" :style="{ background: typeColors[post.type] + '20', color: typeColors[post.type] }">
-            <Icon :name="typeIcons[post.type]" class="w-3.5 h-3.5" />
+          <div class="feed-type-badge">
+            <span class="feed-type-dot" :style="{ background: typeColors[post.type] }"></span>
             <span>{{ post.type === 'announcement' ? ui.t('feed.type.announcement') : post.type === 'achievement' ? ui.t('feed.type.achievement') : post.type === 'gallery' ? ui.t('feed.type.gallery') : post.type === 'poll' ? ui.t('feed.type.poll') : ui.t('feed.type.schedule') }}</span>
           </div>
         </div>
         <h3 class="feed-title"><TranslatedText :text="post.title" /></h3>
-        <p class="feed-content"><TranslatedText :text="post.content" /></p>
+        <p class="feed-content"><TranslatedText :text="post.content" strip-html /></p>
 
         <div v-if="post.type === 'gallery'" class="feed-gallery-preview">
           <div v-for="i in 3" :key="i" class="gallery-thumb" :style="{ background: typeColors[post.type] + '30' }">
@@ -120,10 +117,10 @@ const typeColors: Record<string, string> = {
 .table-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; }
 .search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); width: 280px; color: var(--text-primary); background: var(--bg-card); }
 .search-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
-.empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }
-.feed-list { display: flex; flex-direction: column; gap: 16px; max-width: 700px; }
-.feed-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 20px 24px; transition: all 0.2s; }
-.feed-card:hover { border-color: var(--olive-light); }
+.empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; grid-column: 1 / -1; }
+.feed-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.feed-card { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 18px 20px; transition: all 0.2s; }
+.feed-card:hover { border-color: var(--border-medium); }
 .post-highlight { border-color: var(--olive-primary); box-shadow: 0 0 0 3px rgba(139,148,103,0.18); animation: highlight-pulse 1.5s ease; }
 @keyframes highlight-pulse { 0% { background: rgba(139,148,103,0.15); } 100% { background: var(--bg-card); } }
 .feed-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
@@ -131,10 +128,11 @@ const typeColors: Record<string, string> = {
 .feed-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: var(--font-bold); flex-shrink: 0; }
 .feed-author { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
 .feed-meta { font-size: var(--text-xs); color: var(--text-muted); margin-top: 1px; }
-.feed-type-badge { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; font-size: var(--text-xs); font-weight: var(--font-medium); }
+.feed-type-badge { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); font-weight: var(--font-medium); color: var(--text-secondary); }
+.feed-type-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .feed-title { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 6px; }
-.feed-content { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); margin-bottom: 12px; }
-.feed-gallery-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; padding: 8px; background: var(--bg-main); border-radius: 8px; }
+.feed-content { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); margin-bottom: 12px; flex: 1; }
+.feed-gallery-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
 .gallery-thumb { aspect-ratio: 16/9; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
 .feed-actions { display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border-light); }
 .feed-action-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: var(--text-sm); color: var(--text-secondary); transition: all 0.2s; }

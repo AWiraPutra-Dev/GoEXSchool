@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
     ekskulLogo: n.extracurricular.logoUrl,
     ekskulId: n.extracurricularId,
     author: n.author,
+    coverImage: n.coverImage,
     date: n.createdAt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
   }))
 })

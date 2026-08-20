@@ -83,7 +83,7 @@ const categoryLabels: Record<string, string> = {
 .av-scroll { overflow-y: auto; padding: 24px 32px; }
 .av-cover { width: 100%; max-height: 320px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; }
 .av-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.av-category { font-size: 11px; padding: 3px 10px; border-radius: 6px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.av-category { font-size: 11px; color: var(--text-secondary); font-weight: var(--font-medium); }
 .av-ekskul { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-sm); color: var(--text-secondary); font-weight: var(--font-medium); }
 .ekskul-logo-img { width: 20px; height: 20px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
 .av-author, .av-date { font-size: var(--text-sm); color: var(--text-muted); }

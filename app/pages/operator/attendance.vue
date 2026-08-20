@@ -2,46 +2,19 @@
 definePageMeta({ layout: 'dashboard', middleware: 'auth' })
 
 const ui = useUiStore()
-const auth = useAuthStore()
 const op = useOperatorDataStore()
-const admin = useMasterDataStore()
-const { myEkskul, isOperator, isScopedOperator } = useEkskulScope()
 const { confirm } = useConfirm()
+onMounted(() => { op.fetchAll() })
+
+// Efek buku tamu: polling ringan — siswa yang baru scan langsung terlihat
+// di riwayat tanpa harus refresh halaman.
+let pollTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
-  op.fetchAll(); admin.fetchReference()
-  // Operator ekskul: QR otomatis untuk ekskul miliknya
-  if (isScopedOperator.value && myEkskul.value) selectedEkskulId.value = myEkskul.value.id
+  pollTimer = setInterval(() => op.refreshAttendance(), 10_000)
 })
-const generating = ref(false)
-const activeSession = ref<{ id: string; token: string; expiresAt: string; locationName?: string | null } | null>(null)
-const selectedEkskulId = ref('')
-
-// Lokasi geofencing untuk sesi absensi ini (diatur saat membuat QR).
-// Default: titik & radius lokasi sekolah (bisa digeser/diubah per sesi).
-const qrLocation = ref<{ latitude: number | null; longitude: number | null; radius: number; locationName?: string | null }>({
-  latitude: auth.institution?.latitude ?? null,
-  longitude: auth.institution?.longitude ?? null,
-  radius: auth.institution?.attendanceRadius ?? 200,
-  locationName: auth.institution?.address ?? null,
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
 })
-
-async function generateQr() {
-  if (!selectedEkskulId.value) return
-  generating.value = true
-  try {
-    const res = await $fetch<{ id: string; token: string; expiresAt: string; locationName?: string | null }>('/api/operator/attendance/session', {
-      method: 'POST', body: {
-        extracurricularId: selectedEkskulId.value,
-        latitude: qrLocation.value.latitude,
-        longitude: qrLocation.value.longitude,
-        radius: qrLocation.value.radius,
-        locationName: qrLocation.value.locationName,
-      }
-    })
-    activeSession.value = res
-  } catch {}
-  generating.value = false
-}
 
 // Ekspansi baris riwayat: tampilkan detail per siswa
 const expanded = ref<Record<string, boolean>>({})
@@ -64,6 +37,31 @@ const detailPages = ref<Record<string, number>>({})
 function pagedRecords(h: any): any[] {
   const pg = detailPages.value[h.id] ?? 1
   return ((h.records ?? []) as any[]).slice((pg - 1) * 10, pg * 10)
+}
+
+// ---- Kumpulan surat izin per sesi (preview tanpa unduh) ----
+const showIzinsModal = ref(false)
+const izinsList = ref<any[]>([])
+const izinsTarget = ref<any>(null)
+const izinsLoading = ref(false)
+const izinsError = ref('')
+const previewSurat = ref<string | null>(null)
+
+async function openIzins(h: any) {
+  izinsTarget.value = h
+  izinsList.value = []
+  izinsError.value = ''
+  showIzinsModal.value = true
+  izinsLoading.value = true
+  try {
+    izinsList.value = await $fetch<any[]>('/api/siswa/izin', {
+      query: { date: h.dateISO, ekskulId: h.ekskulId },
+    })
+  } catch (err: any) {
+    izinsError.value = err?.data?.message || 'Gagal memuat surat izin.'
+  } finally {
+    izinsLoading.value = false
+  }
 }
 
 // ---- Tandai alpha (tidak hadir tanpa izin) ----
@@ -117,52 +115,13 @@ const statusColor: Record<string, string> = {
   izin: 'var(--orange)',
   alpha: 'var(--red-orange)',
 }
-
-const schoolZone = computed(() => getSchoolZone(auth.institution))
 </script>
 
 <template>
   <div class="space-y-4">
     <h1 class="page-title">{{ ui.t('menu.attendanceQr') }}</h1>
 
-    <div class="qr-generator-card">
-      <div class="form-row" style="max-width: 400px;">
-        <div class="form-group">
-          <label>Ekskul</label>
-          <select v-if="!isOperator" v-model="selectedEkskulId" class="form-input" required>
-            <option disabled value="">Pilih Ekskul</option>
-            <option v-for="e in admin.extracurriculars" :key="e.id" :value="e.id">{{ e.name }}</option>
-          </select>
-          <div v-else-if="myEkskul" class="scope-badge"><Icon name="i-lucide-shield" class="w-4 h-4" /> {{ myEkskul.name }}</div>
-          <div v-else class="scope-warning"><Icon name="i-lucide-alert-circle" class="w-4 h-4" /> Akun belum diikat ke ekskul. Hubungi admin.</div>
-        </div>
-      </div>
-      <div class="qr-location-box">
-        <div class="form-group">
-          <label>Titik Lokasi Absensi (siswa harus berada di area ini saat scan)</label>
-          <SchoolLocationPicker v-model="qrLocation" :show-radius="true" />
-        </div>
-        <p class="loc-note">
-          <Icon name="i-lucide-info" class="w-3.5 h-3.5" />
-          Default mengikuti lokasi sekolah. Geser marker atau ketik alamat untuk menyesuaikan titik absensi sesi ini.
-        </p>
-      </div>
-      <button class="btn-primary" :disabled="generating" @click="generateQr">
-        <Icon name="i-lucide-qr-code" class="w-4 h-4" />
-        {{ generating ? 'Membuat QR...' : 'Buat QR Absensi' }}
-      </button>
-      <div v-if="activeSession" class="qr-result">
-        <div class="qr-placeholder">
-          <div class="qr-grid"><div v-for="i in 121" :key="i" class="qr-cell" :class="{ 'qr-dark': Math.random() > 0.6 }"></div></div>
-        </div>
-        <div class="qr-info">
-          <p class="qr-token">Token: <strong>{{ activeSession.token }}</strong></p>
-          <p class="qr-expires">Berlaku sampai: {{ activeSession.expiresAt }} {{ schoolZone }}</p>
-          <p v-if="activeSession.locationName" class="qr-location-name"><Icon name="i-lucide-map-pin" class="w-3.5 h-3.5" /> {{ activeSession.locationName }}</p>
-          <p class="qr-hint" style="color: var(--text-muted); font-size: var(--text-sm);">Tampilkan QR ini di layar, siswa scan lewat dashboard mereka.</p>
-        </div>
-      </div>
-    </div>
+    <AttendanceQrGenerator @created="op.refreshAttendance()" />
 
     <div class="table-card">
       <div class="table-toolbar">
@@ -181,6 +140,9 @@ const schoolZone = computed(() => getSchoolZone(auth.institution))
               <td>{{ h.total }}</td>
               <td><span class="status-badge" :class="h.status === 'Berlangsung' ? 'status-live' : 'status-done'">{{ h.status }}</span></td>
               <td class="text-right">
+                <button class="surat-btn" title="Lihat kumpulan surat izin" @click.stop="openIzins(h)">
+                  <Icon name="i-lucide-file-text" class="w-4 h-4" /> Surat Izin
+                </button>
                 <button class="expand-btn" :class="{ 'expanded': expanded[h.id] }" title="Lihat detail siswa" @click.stop>
                   <Icon name="i-lucide-chevron-down" class="w-4 h-4" @click="toggleRow(h.id)" />
                 </button>
@@ -202,7 +164,7 @@ const schoolZone = computed(() => getSchoolZone(auth.institution))
                         <td>{{ r.nis }}</td>
                         <td class="font-semibold">{{ r.student }}</td>
                         <td>{{ r.class }}</td>
-                        <td><span class="status-badge" :style="{ background: statusColor[r.status] + '22', color: statusColor[r.status] }">
+                        <td><span class="status-badge" :style="{ color: statusColor[r.status] }">
                           <Icon :name="statusIcon[r.status] || 'i-lucide-user'" class="w-3.5 h-3.5" /> {{ statusLabel[r.status] || r.status }}
                         </span></td>
                         <td>{{ r.time || '-' }}</td>
@@ -240,50 +202,114 @@ const schoolZone = computed(() => getSchoolZone(auth.institution))
       </table>
       <PaginationBar v-model:page="page" :total="filteredHistory.length" />
     </div>
+
+    <!-- Modal Kumpulan Surat Izin (preview tanpa unduh) -->
+    <Teleport to="body">
+      <div v-if="showIzinsModal && izinsTarget" class="modal-overlay" @click.self="showIzinsModal = false">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-header-icon"><Icon name="i-lucide-folder-open" class="w-5 h-5" /></div>
+            <div>
+              <h3 class="modal-title">Kumpulan Surat Izin</h3>
+              <p class="modal-sub">{{ izinsTarget.ekskul }} · {{ izinsTarget.date }}, klik surat untuk melihat tanpa unduh.</p>
+            </div>
+            <button class="modal-close" @click="showIzinsModal = false"><Icon name="i-lucide-x" class="w-4 h-4" /></button>
+          </div>
+
+          <div v-if="izinsLoading" class="izins-loading"><div class="loading-shimmer" style="width:100%;height:80px;border-radius:6px;"></div></div>
+          <p v-else-if="izinsError" class="izins-error">{{ izinsError }}</p>
+          <div v-else-if="izinsList.length" class="izins-list">
+            <div v-for="z in izinsList" :key="z.id" class="izins-row">
+              <div class="izins-avatar">{{ (z.student || '?')[0] }}</div>
+              <div class="izins-info">
+                <div class="izins-name">{{ z.student }}</div>
+                <div class="izins-meta"><span class="izins-class"><Icon name="i-lucide-school" class="w-3 h-3" /> {{ z.class }}</span><span class="izins-reason">{{ z.reason }}</span></div>
+              </div>
+              <button v-if="z.proofUrl" class="izins-view-btn" @click="previewSurat = z.proofUrl">
+                <Icon name="i-lucide-eye" class="w-4 h-4" /> Lihat Surat
+              </button>
+              <span v-else class="izins-no-surat"><Icon name="i-lucide-alert-triangle" class="w-3.5 h-3.5" /> Tanpa Surat</span>
+            </div>
+          </div>
+          <div v-else class="izins-empty"><Icon name="i-lucide-file-x-2" class="w-8 h-8" /><p>Belum ada surat izin pada sesi ini.</p></div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Preview surat izin (tanpa unduh) -->
+    <Teleport to="body">
+      <div v-if="previewSurat" class="modal-overlay" @click.self="previewSurat = null">
+        <div class="modal-content surat-preview-modal">
+          <div class="surat-preview-head">
+            <span class="surat-preview-title"><Icon name="i-lucide-file-check-2" class="w-4 h-4" /> Surat Izin</span>
+            <button class="modal-close" @click="previewSurat = null"><Icon name="i-lucide-x" class="w-4 h-4" /></button>
+          </div>
+          <img :src="previewSurat" class="surat-preview-img" alt="Surat izin" />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
-.btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; }
-.btn-primary:hover { background: var(--olive-dark); }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.form-row { margin-bottom: 16px; }
-.form-group label { display: block; font-size: var(--text-sm); font-weight: var(--font-medium); margin-bottom: 4px; color: var(--text-primary); }
-.form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: var(--text-sm); color: var(--text-primary); }
-.form-input:focus { outline: none; border-color: var(--olive-primary); }
-.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
-.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
-.qr-generator-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 24px; }
-.qr-location-box { margin: 4px 0 16px; padding: 16px; background: var(--bg-main); border: 1px solid var(--border-light); border-radius: 8px; }
-.loc-note { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-muted); margin-top: 10px; }
-.qr-location-name { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 4px; }
-.qr-result { display: flex; gap: 24px; margin-top: 24px; align-items: center; flex-wrap: wrap; }
-.qr-placeholder { width: 180px; height: 180px; border: 2px solid var(--border-light); border-radius: 12px; overflow: hidden; padding: 12px; }
-.qr-grid { display: grid; grid-template-columns: repeat(11, 1fr); gap: 2px; width: 100%; height: 100%; }
-.qr-cell { background: white; border-radius: 1px; }
-.qr-dark { background: var(--text-primary); }
-.qr-token { font-size: var(--text-md); margin-bottom: 4px; }
-.qr-expires { font-size: var(--text-sm); color: var(--text-secondary); }
 .table-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden; }
 .table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border-light); }
 .search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); width: 240px; color: var(--text-primary); background: var(--bg-card); }
 .search-input:focus { outline: none; border-color: var(--olive-primary); }
 .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .data-table th { text-align: left; padding: 10px 16px; font-weight: var(--font-semibold); background: var(--bg-main); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase; }
+.data-table th.text-right, .data-table td.text-right { text-align: right; }
 .data-table td { padding: 10px 16px; border-top: 1px solid var(--border-light); }
 .text-right { text-align: right; }
 .history-row { cursor: pointer; transition: background 0.15s; }
 .history-row:hover { background: var(--bg-hover); }
 .row-open { background: rgba(139,148,103,0.05); }
-.count-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; padding: 1px 8px; border-radius: 10px; font-size: var(--text-xs); font-weight: var(--font-bold); }
-.count-hadir { background: rgba(99,183,132,0.15); color: var(--green-soft); }
-.count-izin { background: rgba(212,192,137,0.25); color: var(--orange); }
-.count-alpha { background: rgba(229,114,94,0.15); color: var(--red-orange); }
+.count-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; font-size: var(--text-xs); font-weight: var(--font-bold); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.count-hadir { color: var(--text-secondary); }
+.count-izin { color: var(--text-secondary); }
+.count-alpha { color: var(--text-secondary); }
 .expand-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; border-radius: 4px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .expand-btn:hover { color: var(--accent); background: var(--bg-hover); }
 .expand-btn svg { transition: transform 0.2s; }
 .expand-btn.expanded svg { transform: rotate(180deg); }
+.surat-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--text-xs); font-weight: var(--font-semibold);
+  color: var(--accent); background: var(--accent-soft, rgba(79,70,229,0.1));
+  border: 1px solid var(--accent-border, rgba(79,70,229,0.25));
+  border-radius: 6px; padding: 5px 10px; margin-right: 6px;
+  cursor: pointer; transition: all 0.2s;
+}
+.surat-btn:hover { background: var(--accent); color: white; }
+
+/* ===== Modal surat izin ===== */
+.izins-loading { padding: 12px 20px; }
+.izins-error { padding: 12px 20px; color: var(--red-orange); font-size: var(--text-sm); }
+.izins-list { display: flex; flex-direction: column; padding: 8px 20px 16px; gap: 8px; max-height: 320px; overflow-y: auto; }
+.izins-row { display: flex; align-items: center; gap: 12px; background: var(--bg-main); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 12px; }
+.izins-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft, rgba(79,70,229,0.12)); color: var(--accent); font-weight: var(--font-bold); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.izins-info { flex: 1; min-width: 0; }
+.izins-name { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
+.izins-meta { display: flex; align-items: center; gap: 10px; margin-top: 3px; flex-wrap: wrap; }
+.izins-class { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); }
+.izins-reason { font-size: 11px; color: var(--text-muted); }
+.izins-view-btn { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--accent); background: var(--accent-soft, rgba(79,70,229,0.1)); border: 1px solid var(--accent-border, rgba(79,70,229,0.25)); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+.izins-view-btn:hover { background: var(--accent); color: white; }
+.izins-no-surat { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); font-weight: var(--font-medium); color: #b45309; flex-shrink: 0; }
+.izins-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px; color: var(--text-muted); font-size: var(--text-sm); }
+.surat-preview-modal { width: min(720px, 94vw); }
+.surat-preview-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border-light); }
+.surat-preview-title { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
+.surat-preview-img { width: 100%; max-height: 78vh; object-fit: contain; display: block; }
+.modal-header { display: flex; align-items: flex-start; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--border-light); }
+.modal-header-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft, rgba(79,70,229,0.12)); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.modal-title { font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--text-primary); }
+.modal-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+.modal-close { margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+.modal-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(2px); }
+.modal-content { background: var(--bg-card); border-radius: 14px; width: 540px; max-width: 92vw; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
 .detail-row td { background: var(--bg-main); padding: 16px 20px !important; }
 .detail-wrap { border: 1px solid var(--border-light); border-radius: 8px; overflow: hidden; background: var(--bg-card); }
 .detail-stats { display: flex; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border-light); font-size: var(--text-xs); color: var(--text-secondary); font-weight: var(--font-medium); }
@@ -304,7 +330,7 @@ const schoolZone = computed(() => getSchoolZone(auth.institution))
 .alpha-marked { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--text-muted); }
 .spin-icon { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.status-badge { font-size: var(--text-xs); padding: 3px 10px; border-radius: 10px; font-weight: var(--font-medium); display: inline-flex; align-items: center; gap: 5px; }
-.status-done { background: rgba(74,158,158,0.15); color: var(--teal); }
-.status-live { background: rgba(139,148,103,0.15); color: var(--olive-primary); }
+.status-badge { font-size: var(--text-xs); font-weight: var(--font-medium); display: inline-flex; align-items: center; gap: 5px; }
+.status-live { color: var(--olive-primary); }
+.status-done { color: var(--text-muted); }
 </style>

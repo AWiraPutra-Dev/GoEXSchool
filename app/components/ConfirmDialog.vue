@@ -175,7 +175,7 @@ async function onConfirm() {
   font-variant-numeric: tabular-nums;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 1px 10px;
   font-size: var(--text-xs);
 }

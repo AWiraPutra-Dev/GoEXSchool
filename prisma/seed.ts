@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { hash as hashBcrypt } from 'bcrypt-ts'
+import { PERMISSION_FEATURES } from '../app/utils/permissions'
 
 const prisma = new PrismaClient()
 
@@ -80,7 +81,7 @@ async function main() {
     prisma.extracurricular.create({ data: { name: 'Basket', quota: 30, scheduleInfo: 'Senin & Rabu 15.30-17.00', description: 'Latihan basket rutin untuk persiapan kompetisi', logoUrl: '/logos/basket.svg', teacherId: teachers[0].id, institutionId: inst.id } }),
     prisma.extracurricular.create({ data: { name: 'Paduan Suara', quota: 25, scheduleInfo: 'Selasa & Kamis 16.00-17.30', description: 'Paduan suara sekolah', logoUrl: '/logos/paduan-suara.svg', teacherId: teachers[1].id, institutionId: inst.id } }),
     prisma.extracurricular.create({ data: { name: 'Robotik', quota: 20, scheduleInfo: 'Rabu & Jumat 15.30-17.00', description: 'Belajar robotik dan pemrograman', logoUrl: '/logos/robotik.svg', teacherId: teachers[2].id, institutionId: inst.id } }),
-    prisma.extracurricular.create({ data: { name: 'Pramuka', quota: 80, scheduleInfo: 'Sabtu 08.00-12.00', description: 'Kegiatan pramuka sekolah', logoUrl: '/logos/pramuka.svg', teacherId: teachers[3].id, institutionId: inst.id } }),
+    prisma.extracurricular.create({ data: { name: 'Pramuka', quota: 80, scheduleInfo: 'Sabtu 08.00-10.00', description: 'Kegiatan pramuka sekolah', logoUrl: '/logos/pramuka.svg', teacherId: teachers[3].id, institutionId: inst.id } }),
     prisma.extracurricular.create({ data: { name: 'KIR', quota: 15, scheduleInfo: 'Jumat 15.30-17.00', description: 'Kelompok Ilmiah Remaja', logoUrl: '/logos/kir.svg', teacherId: teachers[4].id, institutionId: inst.id } }),
     prisma.extracurricular.create({ data: { name: 'Seni Tari', quota: 25, scheduleInfo: 'Selasa & Kamis 15.30-17.00', description: 'Seni tari tradisional dan modern', logoUrl: '/logos/seni-tari.svg', institutionId: inst.id } }),
     prisma.extracurricular.create({ data: { name: 'Futsal', quota: 20, scheduleInfo: 'Senin & Jumat 16.00-17.30', description: 'Futsal sekolah', logoUrl: '/logos/futsal.svg', institutionId: inst.id } }),
@@ -121,7 +122,7 @@ async function main() {
   // Ekskul tambahan: organisasi & kedisiplinan (OSIS, PMR, Paskibra, Satgas)
   const ekskulOsis = await prisma.extracurricular.create({ data: { name: 'OSIS', quota: 60, scheduleInfo: 'Jumat 15.30-17.00', description: 'Organisasi Siswa Intra Sekolah — wadah pengembangan kepemimpinan siswa', logoUrl: '/logos/osis.svg', institutionId: inst.id } })
   const ekskulPmr = await prisma.extracurricular.create({ data: { name: 'PMR', quota: 40, scheduleInfo: 'Kamis 15.30-17.00', description: 'Palang Merah Remaja — pendidikan kesehatan dan kemanusiaan', logoUrl: '/logos/pmr.svg', institutionId: inst.id } })
-  const ekskulPaskibra = await prisma.extracurricular.create({ data: { name: 'Paskibra', quota: 30, scheduleInfo: 'Rabu & Sabtu 15.30-17.00', description: 'Pasukan Pengibar Bendera — kedisiplinan dan upacara', logoUrl: '/logos/paskibra.svg', institutionId: inst.id } })
+  const ekskulPaskibra = await prisma.extracurricular.create({ data: { name: 'Paskibra', quota: 30, scheduleInfo: 'Rabu & Sabtu 15.30-17.00', description: 'Pasukan Pengibar Bendera — kedisiplinan dan upacara', logoUrl: '/logos/paskibra.png', institutionId: inst.id } })
   const ekskulSatgas = await prisma.extracurricular.create({ data: { name: 'Satgas', quota: 25, scheduleInfo: 'Selasa 15.30-17.00', description: 'Satuan Tugas — keamanan, ketertiban, dan kebersihan sekolah', logoUrl: '/logos/satgas.svg', institutionId: inst.id } })
   ekskuls.push(ekskulOsis, ekskulPmr, ekskulPaskibra, ekskulSatgas)
 
@@ -328,11 +329,11 @@ async function main() {
     { day: 'Jumat', timeStart: '15:30', timeEnd: '17:00', coach: 'Asep Kurniawan, S.T.', location: 'Lab Komputer', ekskul: ekskuls[2], latitude: -6.9040, longitude: 107.6140, radius: 60 },
     { day: 'Jumat', timeStart: '15:30', timeEnd: '17:00', coach: 'Rizky Pratama, S.Si.', location: 'Ruang KIR', ekskul: ekskuls[4], latitude: -6.9042, longitude: 107.6143, radius: 60 },
     { day: 'Jumat', timeStart: '16:00', timeEnd: '17:30', coach: 'Pelatih Futsal', location: 'Lapangan Futsal', ekskul: ekskuls[6], latitude: -6.9058, longitude: 107.6160, radius: 120 },
-    { day: 'Sabtu', timeStart: '08:00', timeEnd: '12:00', coach: 'Dra. Nina Marlina', location: 'Lapangan Upacara', ekskul: ekskuls[3], latitude: -6.9047, longitude: 107.6137, radius: 150 },
+    { day: 'Sabtu', timeStart: '08:00', timeEnd: '10:00', coach: 'Dra. Nina Marlina', location: 'Lapangan Upacara', ekskul: ekskuls[3], latitude: -6.9047, longitude: 107.6137, radius: 150 },
     { day: 'Jumat', timeStart: '15:30', timeEnd: '17:00', coach: 'Dra. Sari Dewi', location: 'Ruang OSIS', ekskul: ekskulOsis, latitude: -6.9049, longitude: 107.6146, radius: 60 },
     { day: 'Kamis', timeStart: '15:30', timeEnd: '17:00', coach: 'Asep Kurniawan, S.T.', location: 'UKS', ekskul: ekskulPmr, latitude: -6.9046, longitude: 107.6144, radius: 50 },
     { day: 'Rabu', timeStart: '15:30', timeEnd: '17:00', coach: 'Dra. Nina Marlina', location: 'Lapangan Upacara', ekskul: ekskulPaskibra, latitude: -6.9047, longitude: 107.6137, radius: 150 },
-    { day: 'Sabtu', timeStart: '08:00', timeEnd: '10:00', coach: 'Dra. Nina Marlina', location: 'Lapangan Upacara', ekskul: ekskulPaskibra, latitude: -6.9047, longitude: 107.6137, radius: 150 },
+    { day: 'Sabtu', timeStart: '10:00', timeEnd: '11:30', coach: 'Dra. Nina Marlina', location: 'Lapangan Upacara', ekskul: ekskulPaskibra, latitude: -6.9047, longitude: 107.6137, radius: 150 },
     { day: 'Selasa', timeStart: '15:30', timeEnd: '17:00', coach: 'Rizky Pratama, S.Si.', location: 'Lingkungan Sekolah', ekskul: ekskulSatgas, latitude: -6.9052, longitude: 107.6152, radius: 100 },
   ]
 
@@ -431,29 +432,29 @@ async function main() {
 
   // Achievements
   await Promise.all([
-    prisma.achievement.create({ data: { title: 'Juara 1 Lomba Basket', description: 'Kejuaraan Basket Antar Sekolah tingkat Kota', type: 'juara', level: 'kota', date: new Date('2026-05-10'), studentId: students[0].id, extracurricularId: ekskuls[0].id, proofUrl: '/images/achievements/juara.svg' } }),
-    prisma.achievement.create({ data: { title: 'Sertifikat Kompetisi Robotik', description: 'Peserta kompetisi robotik tingkat provinsi', type: 'sertifikat', level: 'provinsi', date: new Date('2026-04-20'), studentId: students[0].id, extracurricularId: ekskuls[2].id, proofUrl: '/images/achievements/sertifikat.svg' } }),
-    prisma.achievement.create({ data: { title: 'Juara 3 Olimpiade Sains', description: 'Olimpiade Sains tingkat Kota Bandung', type: 'juara', level: 'kota', date: new Date('2026-03-15'), studentId: students[4].id, extracurricularId: ekskuls[3].id, proofUrl: '/images/achievements/juara.svg' } }),
-    prisma.achievement.create({ data: { title: 'Sertifikat Pramuka Garuda', description: 'Tergabung dalam Pramuka Garuda tingkat Kwartir Cabang', type: 'sertifikat', level: 'kota', date: new Date('2026-02-28'), studentId: students[4].id, extracurricularId: ekskuls[3].id, proofUrl: '/images/achievements/sertifikat.svg' } }),
-    prisma.achievement.create({ data: { title: 'Partisipasi Pentas Seni', description: 'Pentas seni budaya dalam acara HUT Kota Bandung', type: 'partisipasi', level: 'kota', date: new Date('2026-01-20'), studentId: students[1].id, extracurricularId: ekskuls[1].id, proofUrl: '/images/achievements/partisipasi.svg' } }),
+    prisma.achievement.create({ data: { title: 'Juara 1 Lomba Basket', description: 'Kejuaraan Basket Antar Sekolah tingkat Kota', type: 'juara', level: 'kota', date: new Date('2026-05-10'), studentId: students[0].id, extracurricularId: ekskuls[0].id, proofUrl: '/images/achievements/juara-1.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Sertifikat Kompetisi Robotik', description: 'Peserta kompetisi robotik tingkat provinsi', type: 'sertifikat', level: 'provinsi', date: new Date('2026-04-20'), studentId: students[0].id, extracurricularId: ekskuls[2].id, proofUrl: '/images/achievements/robotik.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Juara 3 Olimpiade Sains', description: 'Olimpiade Sains tingkat Kota Bandung', type: 'juara', level: 'kota', date: new Date('2026-03-15'), studentId: students[4].id, extracurricularId: ekskuls[3].id, proofUrl: '/images/achievements/olimpiade.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Sertifikat Pramuka Garuda', description: 'Tergabung dalam Pramuka Garuda tingkat Kwartir Cabang', type: 'sertifikat', level: 'kota', date: new Date('2026-02-28'), studentId: students[4].id, extracurricularId: ekskuls[3].id, proofUrl: '/images/achievements/pramuka.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Partisipasi Pentas Seni', description: 'Pentas seni budaya dalam acara HUT Kota Bandung', type: 'partisipasi', level: 'kota', date: new Date('2026-01-20'), studentId: students[1].id, extracurricularId: ekskuls[1].id, proofUrl: '/images/achievements/pentas.jpg' } }),
     // Prestasi tambahan agar tiap role punya portofolio
-    prisma.achievement.create({ data: { title: 'Pemain Terbaik Turnamen Basket Kota', description: 'Terpilih sebagai pemain terbaik dalam turnamen basket antar SMA', type: 'juara', level: 'kota', date: new Date('2026-07-30'), studentId: students[2].id, extracurricularId: ekskuls[0].id, proofUrl: '/images/achievements/juara.svg' } }),
-    prisma.achievement.create({ data: { title: 'Sertifikat Lomba Tingkat Pramuka', description: 'Peserta Lomba Tingkat Pramuka Penggalang tingkat Kwartir Cabang', type: 'sertifikat', level: 'kota', date: new Date('2026-06-25'), studentId: students[4].id, extracurricularId: ekskuls[3].id, proofUrl: '/images/achievements/sertifikat.svg' } }),
-    prisma.achievement.create({ data: { title: 'Partisipasi Hackathon Robotik Nasional', description: 'Finalis hackathon robotik tingkat nasional', type: 'partisipasi', level: 'nasional', date: new Date('2026-08-01'), studentId: students[6].id, extracurricularId: ekskuls[2].id, proofUrl: '/images/achievements/partisipasi.svg' } }),
-    prisma.achievement.create({ data: { title: 'Juara 3 Kejuaraan Futsal Pelajar', description: 'Kejuaraan futsal pelajar se-Bandung Raya', type: 'juara', level: 'kota', date: new Date('2026-07-18'), studentId: students[2].id, extracurricularId: ekskuls[6].id, proofUrl: '/images/achievements/juara.svg' } }),
+    prisma.achievement.create({ data: { title: 'Pemain Terbaik Turnamen Basket Kota', description: 'Terpilih sebagai pemain terbaik dalam turnamen basket antar SMA', type: 'juara', level: 'kota', date: new Date('2026-07-30'), studentId: students[2].id, extracurricularId: ekskuls[0].id, proofUrl: '/images/achievements/juara-2.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Sertifikat Lomba Tingkat Pramuka', description: 'Peserta Lomba Tingkat Pramuka Penggalang tingkat Kwartir Cabang', type: 'sertifikat', level: 'kota', date: new Date('2026-06-25'), studentId: students[4].id, extracurricularId: ekskuls[3].id, proofUrl: '/images/achievements/pramuka-2.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Partisipasi Hackathon Robotik Nasional', description: 'Finalis hackathon robotik tingkat nasional', type: 'partisipasi', level: 'nasional', date: new Date('2026-08-01'), studentId: students[6].id, extracurricularId: ekskuls[2].id, proofUrl: '/images/achievements/hackathon.jpg' } }),
+    prisma.achievement.create({ data: { title: 'Juara 3 Kejuaraan Futsal Pelajar', description: 'Kejuaraan futsal pelajar se-Bandung Raya', type: 'juara', level: 'kota', date: new Date('2026-07-18'), studentId: students[2].id, extracurricularId: ekskuls[6].id, proofUrl: '/images/achievements/futsal.jpg' } }),
   ])
 
   // News — beberapa berita disetujui admin (displayStatus = approved) sehingga
   // langsung tampil di Event Board siswa di install baru.
   await Promise.all([
-    prisma.news.create({ data: { title: 'Jadwal Latihan Basket Tambahan', content: 'Mulai besok, jadwal latihan basket akan ditambah setiap hari Sabtu pukul 08.00 - 10.00 WIB dalam rangka persiapan lomba.', isPublic: true, displayStatus: 'approved', author: operator.name, extracurricularId: ekskuls[0].id, institutionId: inst.id, createdById: operator.id } }),
-    prisma.news.create({ data: { title: 'Seleksi Anggota Baru Paduan Suara', content: 'Akan diadakan seleksi anggota baru untuk ekskul Paduan Suara pada hari Selasa, 5 Agustus 2026. Pendaftaran dibuka sampai 3 Agustus.', isPublic: true, displayStatus: 'approved', author: operator.name, extracurricularId: ekskuls[1].id, institutionId: inst.id, createdById: operator.id } }),
-    prisma.news.create({ data: { title: 'Informasi Internal Pembina', content: 'Rapat pembina ekskul akan dilaksanakan hari Jumat pukul 14.00 WIB di ruang guru.', isPublic: false, displayStatus: 'none', author: operator.name, extracurricularId: ekskuls[0].id, institutionId: inst.id, createdById: operator.id } }),
-    prisma.news.create({ data: { title: 'Pengumuman Hasil Seleksi', content: 'Hasil seleksi anggota Robotik telah keluar. Silakan cek di papan pengumuman ekskul.', isPublic: true, displayStatus: 'approved', author: operator.name, extracurricularId: ekskuls[2].id, institutionId: inst.id, createdById: operator.id } }),
+    prisma.news.create({ data: { title: 'Jadwal Latihan Basket Tambahan', content: 'Mulai besok, jadwal latihan basket akan ditambah setiap hari Sabtu pukul 08.00 - 10.00 WIB dalam rangka persiapan lomba.', isPublic: true, displayStatus: 'approved', author: operator.name, coverImage: '/images/news/basket-latihan.jpg', extracurricularId: ekskuls[0].id, institutionId: inst.id, createdById: operator.id } }),
+    prisma.news.create({ data: { title: 'Seleksi Anggota Baru Paduan Suara', content: 'Akan diadakan seleksi anggota baru untuk ekskul Paduan Suara pada hari Selasa, 5 Agustus 2026. Pendaftaran dibuka sampai 3 Agustus.', isPublic: true, displayStatus: 'approved', author: operator.name, coverImage: '/images/news/paduan-suara.jpg', extracurricularId: ekskuls[1].id, institutionId: inst.id, createdById: operator.id } }),
+    prisma.news.create({ data: { title: 'Informasi Internal Pembina', content: 'Rapat pembina ekskul akan dilaksanakan hari Jumat pukul 14.00 WIB di ruang guru.', isPublic: false, displayStatus: 'none', author: operator.name, coverImage: '/images/news/rapat.jpg', extracurricularId: ekskuls[0].id, institutionId: inst.id, createdById: operator.id } }),
+    prisma.news.create({ data: { title: 'Pengumuman Hasil Seleksi', content: 'Hasil seleksi anggota Robotik telah keluar. Silakan cek di papan pengumuman ekskul.', isPublic: true, displayStatus: 'approved', author: operator.name, coverImage: '/images/news/robotik-seleksi.jpg', extracurricularId: ekskuls[2].id, institutionId: inst.id, createdById: operator.id } }),
     // Berita tambahan untuk Pramuka (operator utama) & Futsal
-    prisma.news.create({ data: { title: 'Perkemahan Sabtu-Minggu Pramuka', content: 'Kegiatan perkemahan akan dilaksanakan Sabtu-Minggu pekan depan di Bumi Perkemahan Cibubur. Bawa perlengkapan lengkap.', isPublic: true, displayStatus: 'approved', author: operator.name, extracurricularId: ekskuls[3].id, institutionId: inst.id, createdById: operator.id } }),
-    prisma.news.create({ data: { title: 'Open Recruitment Anggota Futsal', content: 'Ekskul Futsal membuka pendaftaran anggota baru. Pendaftaran dibuka sampai akhir bulan ini.', isPublic: true, displayStatus: 'approved', author: opFutsal.name, extracurricularId: ekskuls[6].id, institutionId: inst.id, createdById: opFutsal.id } }),
-    prisma.news.create({ data: { title: 'Jadwal Latihan Robotik Ditambah', content: 'Mulai bulan depan, latihan Robotik ditambah setiap hari Jumat sore untuk persiapan lomba nasional.', isPublic: true, displayStatus: 'pending', author: 'Andhika Wira Putra', extracurricularId: ekskuls[2].id, institutionId: inst.id, createdById: (await prisma.user.findFirst({ where: { role: 'admin', institutionId: inst.id } }))!.id } }),
+    prisma.news.create({ data: { title: 'Perkemahan Sabtu-Minggu Pramuka', content: 'Kegiatan perkemahan akan dilaksanakan Sabtu-Minggu pekan depan di Bumi Perkemahan Cibubur. Bawa perlengkapan lengkap.', isPublic: true, displayStatus: 'approved', author: operator.name, coverImage: '/images/news/perkemahan.jpg', extracurricularId: ekskuls[3].id, institutionId: inst.id, createdById: operator.id } }),
+    prisma.news.create({ data: { title: 'Open Recruitment Anggota Futsal', content: 'Ekskul Futsal membuka pendaftaran anggota baru. Pendaftaran dibuka sampai akhir bulan ini.', isPublic: true, displayStatus: 'approved', author: opFutsal.name, coverImage: '/images/news/futsal-rekrut.jpg', extracurricularId: ekskuls[6].id, institutionId: inst.id, createdById: opFutsal.id } }),
+    prisma.news.create({ data: { title: 'Jadwal Latihan Robotik Ditambah', content: 'Mulai bulan depan, latihan Robotik ditambah setiap hari Jumat sore untuk persiapan lomba nasional.', isPublic: true, displayStatus: 'pending', author: 'Andhika Wira Putra', coverImage: '/images/news/robotik-jadwal.jpg', extracurricularId: ekskuls[2].id, institutionId: inst.id, createdById: (await prisma.user.findFirst({ where: { role: 'admin', institutionId: inst.id } }))!.id } }),
   ])
 
   // Polls
@@ -558,6 +559,7 @@ async function main() {
       color: '#4A9E9E',
       imageCount: 6,
       date: new Date('2026-06-10'),
+      author: operator.name,
       extracurricularId: ekskuls[0].id,
       institutionId: inst.id,
       images: {
@@ -581,6 +583,7 @@ async function main() {
         color: '#8B9467',
         imageCount: 4,
         date: new Date('2026-08-02'),
+        author: operator.name,
         extracurricularId: ekskuls[3].id,
         institutionId: inst.id,
         images: {
@@ -599,6 +602,7 @@ async function main() {
         color: '#D4956A',
         imageCount: 3,
         date: new Date('2026-07-25'),
+        author: opFutsal.name,
         extracurricularId: ekskuls[1].id,
         institutionId: inst.id,
         images: {
@@ -616,6 +620,7 @@ async function main() {
         color: '#4A9E9E',
         imageCount: 2,
         date: new Date('2026-07-20'),
+        author: opFutsal.name,
         extracurricularId: ekskuls[6].id,
         institutionId: inst.id,
         images: {
@@ -836,22 +841,14 @@ async function main() {
     }),
   ])
 
-  // Materi Ekskul — untuk halaman Materi operator & siswa
+  // Materi Ekskul — untuk halaman Materi operator & siswa.
+  // Beragam jenis: teks (langsung dibaca), PDF & gambar (preview inline),
+  // video (HANYA link unduh — tidak di-embed agar ringan), dan link eksternal.
   await Promise.all([
+    // Basket: PDF preview + teks + link video unduh
     prisma.extracurricularMaterial.create({
       data: {
-        title: 'Video Latihan Dribble Dasar',
-        description: 'Video panduan latihan dribble untuk anggota baru basket.',
-        fileUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        fileType: 'video',
-        extracurricularId: ekskuls[0].id,
-        uploadedById: opBasket.id,
-        institutionId: inst.id,
-      }
-    }),
-    prisma.extracurricularMaterial.create({
-      data: {
-        title: 'Taktik Menyerang Basket (PDF)',
+        title: 'Taktik Menyerang Basket',
         description: 'Dokumen taktik dan formasi menyerang yang dipakai tim basket.',
         fileUrl: '/files/basket-taktik-menyerang.pdf',
         fileType: 'pdf',
@@ -860,6 +857,52 @@ async function main() {
         institutionId: inst.id,
       }
     }),
+    prisma.extracurricularMaterial.create({
+      data: {
+        title: 'Teknik Dribble Dasar',
+        description: 'Langkah-langkah dasar dribble untuk anggota baru.',
+        content: 'Dribble dasar: 1) Rentangkan jari dan dorong bola dengan ujung jari, 2) Pantulkan bola setinggi pinggang, 3) Jaga pandangan ke depan (bukan ke bola), 4) Gunakan tangan kiri dan kanan secara bergantian, 5) Latihan 15 menit setiap hari agar kontrol bola makin baik.',
+        fileType: 'text',
+        extracurricularId: ekskuls[0].id,
+        uploadedById: opBasket.id,
+        institutionId: inst.id,
+      }
+    }),
+    prisma.extracurricularMaterial.create({
+      data: {
+        title: 'Video Latihan Dribble (unduh)',
+        description: 'Video panduan latihan dribble. Unduh untuk menonton secara offline.',
+        fileUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        fileType: 'video',
+        extracurricularId: ekskuls[0].id,
+        uploadedById: opBasket.id,
+        institutionId: inst.id,
+      }
+    }),
+    // Robotik: PDF + teks
+    prisma.extracurricularMaterial.create({
+      data: {
+        title: 'Pengenalan Arduino',
+        description: 'Modul pengenalan mikrokontroler Arduino untuk anggota Robotik.',
+        fileUrl: '/files/robotik-pengenalan-arduino.pdf',
+        fileType: 'pdf',
+        extracurricularId: ekskuls[2].id,
+        uploadedById: adminUser.id,
+        institutionId: inst.id,
+      }
+    }),
+    prisma.extracurricularMaterial.create({
+      data: {
+        title: 'Proyek Minggu Ini: Line Follower',
+        description: 'Langkah pengerjaan robot line follower untuk pertemuan mendatang.',
+        content: 'Line follower sederhana: 1) Pasang 2 sensor infrared di bagian depan, 2) Hubungkan ke pin digital Arduino, 3) Motor kiri & kanan dihubungkan ke driver L298N, 4) Logika: sensor kanan mendeteksi garis -> belok kanan, sensor kiri -> belok kiri, 5) Uji di lintasan berwarna hitam di atas dasar putih.',
+        fileType: 'text',
+        extracurricularId: ekskuls[2].id,
+        uploadedById: adminUser.id,
+        institutionId: inst.id,
+      }
+    }),
+    // Pramuka: teks + gambar
     prisma.extracurricularMaterial.create({
       data: {
         title: 'Materi Pionering & Simpul',
@@ -873,18 +916,19 @@ async function main() {
     }),
     prisma.extracurricularMaterial.create({
       data: {
-        title: 'Pengenalan Arduino (PDF)',
-        description: 'Modul pengenalan mikrokontroler Arduino untuk anggota Robotik.',
-        fileUrl: '/files/robotik-pengenalan-arduino.pdf',
-        fileType: 'pdf',
-        extracurricularId: ekskuls[2].id,
-        uploadedById: adminUser.id,
+        title: 'Dokumentasi Perkemahan',
+        description: 'Foto kegiatan perkemahan Sabtu-Minggu sebagai referensi kegiatan.',
+        fileUrl: '/images/gallery/pramuka-1.jpg',
+        fileType: 'image',
+        extracurricularId: ekskuls[3].id,
+        uploadedById: operator.id,
         institutionId: inst.id,
       }
     }),
+    // Paduan Suara: PDF
     prisma.extracurricularMaterial.create({
       data: {
-        title: 'Partitur Lagu Wajib Paduan Suara',
+        title: 'Partitur Lagu Wajib',
         description: 'Partitur lagu wajib yang sedang dilatih untuk pentas seni.',
         fileUrl: '/files/paduan-suara-partitur.pdf',
         fileType: 'pdf',
@@ -893,9 +937,10 @@ async function main() {
         institutionId: inst.id,
       }
     }),
+    // Futsal: teks + link eksternal
     prisma.extracurricularMaterial.create({
       data: {
-        title: 'Pola Bertahan 4-4-2 Futsal',
+        title: 'Pola Bertahan 4-4-2',
         description: 'Catatan pola bertahan yang digunakan tim futsal sekolah.',
         content: 'Formasi bertahan 4-4-2: dua pemain depan melakukan pressing, empat gelandang menjaga lini tengah, dan dua bek menjaga area penalti. Koordinasi antar lini adalah kunci utama.',
         fileType: 'text',
@@ -904,16 +949,39 @@ async function main() {
         institutionId: inst.id,
       }
     }),
+    prisma.extracurricularMaterial.create({
+      data: {
+        title: 'Video Tutorial Latihan Fisik',
+        description: 'Tautan video latihan fisik pemain futsal (link eksternal).',
+        fileUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        fileType: 'video',
+        extracurricularId: ekskuls[6].id,
+        uploadedById: opFutsal.id,
+        institutionId: inst.id,
+      }
+    }),
+    // English Club: link eksternal
+    prisma.extracurricularMaterial.create({
+      data: {
+        title: 'Sumber Belajar Bahasa Inggris',
+        description: 'Kumpulan situs gratis untuk latihan listening & speaking.',
+        fileUrl: 'https://learnenglish.britishcouncil.org',
+        fileType: 'link',
+        extracurricularId: ekskuls[7].id,
+        uploadedById: adminUser.id,
+        institutionId: inst.id,
+      }
+    }),
   ])
 
   // Kepengurusan / struktur organisasi ekskul (foto, nama, kelas & jabatan)
   const boardData = [
     { ekskul: ekskuls[0], positions: [
-      { name: 'Ahmad Rizki Fauzi', className: 'XI IPA 1', position: 'Ketua', sortOrder: 0 },
-      { name: 'Budi Santoso', className: 'XI IPA 2', position: 'Wakil Ketua', sortOrder: 1 },
-      { name: 'Citra Ayu Permata', className: 'XI IPS 1', position: 'Sekretaris', sortOrder: 2 },
-      { name: 'Dewi Lestari', className: 'XI IPA 3', position: 'Bendahara', sortOrder: 3 },
-      { name: 'Eko Prasetyo', className: 'X MIPA 1', position: 'Koordinator Divisi Pertandingan', sortOrder: 4 },
+      { name: 'Ahmad Rizki Fauzi', className: 'XI IPA 1', position: 'Ketua', sortOrder: 0, photoUrl: '/images/board/ahmad.jpg' },
+      { name: 'Budi Santoso', className: 'XI IPA 2', position: 'Wakil Ketua', sortOrder: 1, photoUrl: '/images/board/budi.jpg' },
+      { name: 'Citra Ayu Permata', className: 'XI IPS 1', position: 'Sekretaris', sortOrder: 2, photoUrl: '/images/board/citra.jpg' },
+      { name: 'Dewi Lestari', className: 'XI IPA 3', position: 'Bendahara', sortOrder: 3, photoUrl: '/images/board/dewi.jpg' },
+      { name: 'Eko Prasetyo', className: 'X MIPA 1', position: 'Koordinator Divisi Pertandingan', sortOrder: 4, photoUrl: '/images/board/eko.jpg' },
     ] },
     { ekskul: ekskuls[1], positions: [
       { name: 'Siti Nurhaliza', className: 'XI IPA 2', position: 'Ketua', sortOrder: 0 },
@@ -942,19 +1010,24 @@ async function main() {
   await Promise.all(
     boardData.flatMap(b => b.positions.map((p, i) =>
       prisma.boardPosition.create({
-        data: { name: p.name, className: p.className, position: p.position, sortOrder: p.sortOrder, extracurricularId: b.ekskul.id, institutionId: inst.id },
+        data: { type: 'person', name: p.name, className: p.className, position: p.position, sortOrder: p.sortOrder, photoUrl: p.photoUrl ?? null, extracurricularId: b.ekskul.id, institutionId: inst.id },
       })
     ))
   )
 
-  // Tema tampilan struktur — contoh variasi agar semua tema terlihat di demo
-  await Promise.all([
-    prisma.extracurricular.update({ where: { id: ekskuls[0].id }, data: { structureTheme: 'indigo' } }),
-    prisma.extracurricular.update({ where: { id: ekskuls[1].id }, data: { structureTheme: 'sunset' } }),
-    prisma.extracurricular.update({ where: { id: ekskuls[3].id }, data: { structureTheme: 'forest' } }),
-    prisma.extracurricular.update({ where: { id: ekskulOsis.id }, data: { structureTheme: 'indigo' } }),
-    prisma.extracurricular.update({ where: { id: ekskuls[2].id }, data: { structureTheme: 'sunset' } }),
-  ])
+  // Contoh grid desain (tile image / Canva) untuk ekskul Basket —
+  // dipasang di awal grid agar terlihat campuran kartu pengurus + desain.
+  await prisma.boardPosition.create({
+    data: {
+      type: 'image',
+      name: '',
+      position: '',
+      imageUrl: '/images/gallery/basket-1.jpg',
+      sortOrder: -1,
+      extracurricularId: ekskuls[0].id,
+      institutionId: inst.id,
+    },
+  })
 
   // Agenda kalender siswa (akun siswa demo)
   await Promise.all([
@@ -965,9 +1038,10 @@ async function main() {
     prisma.agenda.create({ data: { title: 'Ujian Tengah Semester', description: 'Persiapan UTS semester ganjil', date: new Date('2026-08-20T00:00:00'), timeStart: '07:00', color: '#D4956A', userId: studentUser.id, institutionId: inst.id } }),
   ])
 
-  // Hak akses (permission) — supaya halaman User & Privileges terlihat terisi
-  const allPerms = ['dashboard', 'students', 'teachers', 'extracurriculars', 'users', 'reports', 'settings', 'attendance', 'schedule', 'members', 'polls', 'news', 'gallery', 'feed', 'achievements', 'structure', 'profile']
-  const opPerms = ['dashboard', 'attendance', 'schedule', 'materials', 'members', 'blog', 'polls', 'news', 'gallery', 'feed', 'achievements', 'profile']
+  // Hak akses (permission) — format `fitur:aksi` (Lihat/Buat/Ubah/Hapus per fitur)
+  const allPerms = PERMISSION_FEATURES.flatMap(f => f.actions.map(a => `${f.id}:${a}`))
+  const opFeatures = ['dashboard', 'attendance', 'schedule', 'members', 'polls', 'news', 'gallery', 'feed', 'achievements', 'profile']
+  const opPerms = PERMISSION_FEATURES.filter(f => opFeatures.includes(f.id)).flatMap(f => f.actions.map(a => `${f.id}:${a}`))
   await Promise.all([
     ...allPerms.map(p => prisma.userPermission.create({ data: { permissionId: p, userId: adminUser.id } })),
     ...opPerms.map(p => prisma.userPermission.create({ data: { permissionId: p, userId: operator.id } })),

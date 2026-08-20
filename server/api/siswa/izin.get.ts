@@ -6,6 +6,7 @@ import { prisma } from '~~/server/utils/prisma'
 // - admin   → izin seluruh ekskul di instansi
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string; studentId?: string; role: string }
+  const query = getQuery(event)
 
   let ekskulIds: string[] | null = null // null = semua ekskul instansi
   if (auth.role === 'student' && auth.studentId) {
@@ -25,6 +26,25 @@ export default defineEventHandler(async (event) => {
     extracurricular: { institutionId: auth.institutionId },
   }
   if (ekskulIds) where.extracurricularId = { in: ekskulIds }
+
+  // `mine=1` (siswa): hanya surat izin milik siswa yang login —
+  // dipakai halaman Kehadiran (kumpulan surat izin saya).
+  if (auth.role === 'student' && auth.studentId && query.mine) {
+    where.studentId = auth.studentId
+  }
+
+  // Filter per tanggal (YYYY-MM-DD) — dipakai kalender & absensi untuk
+  // menampilkan kumpulan surat izin pada hari tertentu.
+  if (query.date) {
+    const d = new Date(`${query.date}T00:00:00`)
+    if (!isNaN(d.getTime())) {
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+      where.date = { gte: start, lt: end }
+    }
+  }
+  // Filter per ekskul (opsional).
+  if (query.ekskulId) where.extracurricularId = String(query.ekskulId)
 
   const records = await prisma.attendanceRecord.findMany({
     where,

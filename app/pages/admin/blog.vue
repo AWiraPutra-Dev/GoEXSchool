@@ -29,13 +29,13 @@ const showViews = ref(false)
 const viewsLoading = ref(false)
 const viewsData = ref<{ articleId: string; viewCount: number; viewers: any[] } | null>(null)
 
-const categories = [
-  { value: 'general', label: 'Umum' },
-  { value: 'announcement', label: 'Pengumuman' },
-  { value: 'achievement', label: 'Prestasi' },
-  { value: 'event', label: 'Kegiatan' },
-  { value: 'tip', label: 'Tips & Info' },
-]
+const categories = computed(() => [
+  { value: 'general', label: ui.t('blog.categories.general') },
+  { value: 'announcement', label: ui.t('blog.categories.announcement') },
+  { value: 'achievement', label: ui.t('blog.categories.achievement') },
+  { value: 'event', label: ui.t('blog.categories.event') },
+  { value: 'tip', label: ui.t('blog.categories.tip') },
+])
 
 onMounted(() => op.fetchArticles())
 
@@ -91,7 +91,7 @@ async function handleCoverUpload(event: Event) {
     const res = await $fetch<{ url: string }>('/api/operator/upload', { method: 'POST', body: fd })
     form.coverImage = res.url
   } catch (e: any) {
-    alert(e.data?.message || 'Gagal upload gambar sampul.')
+    alert(e.data?.message || ui.t('blog.uploadFailed'))
   } finally { uploading.value = false; input.value = '' }
 }
 
@@ -101,7 +101,7 @@ function removeCover() {
 }
 
 async function save(status: 'draft' | 'published') {
-  if (!form.title || !form.content) { alert('Judul dan konten wajib diisi.'); return }
+  if (!form.title || !form.content) { alert(ui.t('blog.titleContentRequired')); return }
   saving.value = true
   try {
     const data = {
@@ -124,9 +124,9 @@ async function save(status: 'draft' | 'published') {
 
 async function removeArticle(article: any) {
   const ok = await confirm({
-    title: `Hapus artikel "${article.title}"?`,
-    message: 'Artikel beserta riwayat pembacaannya akan dihapus permanen.',
-    confirmText: 'Ya, Hapus',
+    title: ui.t('blog.deleteConfirm', { title: article.title }),
+    message: ui.t('blog.deleteMessage'),
+    confirmText: ui.t('confirm.yesDelete'),
     danger: true,
   })
   if (!ok) return
@@ -150,20 +150,20 @@ async function openViews(article: any) {
   } finally { viewsLoading.value = false }
 }
 
-const roleLabels: Record<string, string> = {
-  student: 'Siswa',
-  operator: 'Operator',
-  admin: 'Admin',
-  super_admin: 'Super Admin'
-}
+const roleLabels = computed(() => ({
+  student: ui.t('blog.role.student'),
+  operator: ui.t('blog.role.operator'),
+  admin: ui.t('blog.role.admin'),
+  super_admin: ui.t('blog.role.super_admin')
+}))
 
-const categoryLabels: Record<string, string> = {
-  general: 'Umum',
-  announcement: 'Pengumuman',
-  achievement: 'Prestasi',
-  event: 'Kegiatan',
-  tip: 'Tips & Info'
-}
+const categoryLabels = computed(() => ({
+  general: ui.t('blog.categories.general'),
+  announcement: ui.t('blog.categories.announcement'),
+  achievement: ui.t('blog.categories.achievement'),
+  event: ui.t('blog.categories.event'),
+  tip: ui.t('blog.categories.tip')
+}))
 </script>
 
 <template>
@@ -171,16 +171,16 @@ const categoryLabels: Record<string, string> = {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="page-title">{{ ui.t('menu.blog') }}</h1>
-        <p class="text-[13px]" style="color: var(--text-secondary);">{{ op.articles.length }} total artikel</p>
+        <p class="text-[13px]" style="color: var(--text-secondary);">{{ op.articles.length }} {{ ui.t('blog.totalArticles') }}</p>
       </div>
       <button class="btn-primary" @click="openCreate">
-        <Icon name="i-lucide-plus" class="w-4 h-4" /> Tulis Artikel
+        <Icon name="i-lucide-plus" class="w-4 h-4" /> {{ ui.t('blog.writeArticle') }}
       </button>
     </div>
 
     <!-- Tab Filter -->
     <div class="tab-bar">
-      <button v-for="tab in [['all', 'Semua'], ['published', 'Terbit'], ['draft', 'Draft']]" :key="tab[0]"
+      <button v-for="tab in [['all', ui.t('common.all')], ['published', ui.t('blog.published')], ['draft', ui.t('blog.draft')]]" :key="tab[0]"
         class="tab-btn" :class="{ active: activeTab === tab[0] }" @click="activeTab = tab[0] as any">
         {{ tab[1] }}
         <span class="tab-count">{{ tab[0] === 'all' ? op.articles.length : op.articles.filter((a: any) => a.status === tab[0]).length }}</span>
@@ -189,7 +189,7 @@ const categoryLabels: Record<string, string> = {
 
     <!-- Article List -->
     <div class="article-list">
-      <div v-for="article in paged" :key="article.id" class="article-card" title="Lihat artikel" @click="viewArticle = article">
+      <div v-for="article in paged" :key="article.id" class="article-card" :title="ui.t('blog.viewArticle')" @click="viewArticle = article">
         <div class="article-top">
           <div class="article-meta">
             <span v-if="article.ekskul" class="article-ekskul">
@@ -199,11 +199,11 @@ const categoryLabels: Record<string, string> = {
             </span>
             <span class="article-category">{{ categoryLabels[article.category] || article.category }}</span>
             <span class="article-status" :class="article.status === 'published' ? 'status-pub' : 'status-draft'">
-              {{ article.status === 'published' ? 'Terbit' : 'Draft' }}
+              {{ article.status === 'published' ? ui.t('blog.published') : ui.t('blog.draft') }}
             </span>
           </div>
-          <div class="article-actions" @click.stop>             <button class="action-btn" @click="openEdit(article)" title="Edit"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
-             <button class="action-btn" @click="removeArticle(article)" title="Hapus" style="color: var(--text-red);"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
+          <div class="article-actions" @click.stop>             <button class="action-btn" @click="openEdit(article)" :title="ui.t('action.edit')"><Icon name="i-lucide-pencil" class="w-4 h-4" /></button>
+             <button class="action-btn danger" @click="removeArticle(article)" :title="ui.t('action.delete')"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
           </div>
         </div>
         <h3 class="article-title"><TranslatedText :text="article.title" /></h3>
@@ -211,18 +211,18 @@ const categoryLabels: Record<string, string> = {
         <div class="article-footer" @click.stop>
           <span class="article-author">{{ article.author }}</span>
           <span class="article-date">{{ article.createdAt }}</span>
-          <button class="btn-viewers" title="Lihat siapa saja yang membaca" @click="openViews(article)">
+          <button class="btn-viewers" :title="ui.t('action.view')" @click="openViews(article)">
             <Icon name="i-lucide-eye" class="w-4 h-4" />
-            {{ article.viewCount || 0 }} pembaca
+            {{ article.viewCount || 0 }} {{ ui.t('blog.readers') }}
           </button>
           <button class="btn-toggle-status" :class="article.status === 'published' ? 'btn-draft' : 'btn-publish'" @click="toggleStatus(article)">
-            {{ article.status === 'published' ? 'Arsipkan' : 'Terbitkan' }}
+            {{ article.status === 'published' ? ui.t('blog.archive') : ui.t('blog.publish') }}
           </button>
         </div>
       </div>
       <div v-if="!filteredArticles.length" class="empty-state">
         <Icon name="i-lucide-file-text" class="w-12 h-12 mb-3" style="color: var(--text-muted);" />
-        <p style="color: var(--text-muted);">Belum ada artikel. Klik "Tulis Artikel" untuk membuat.</p>
+        <p style="color: var(--text-muted);">{{ ui.t('blog.noArticles') }}</p>
       </div>
     </div>
     <PaginationBar v-model:page="page" :total="filteredArticles.length" />
@@ -231,51 +231,51 @@ const categoryLabels: Record<string, string> = {
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
         <div class="modal-content" style="width:700px;max-height:90vh;overflow-y:auto;">
-          <h3 class="modal-title">{{ editMode ? 'Edit Artikel' : 'Tulis Artikel Baru' }}</h3>
+          <h3 class="modal-title">{{ editMode ? ui.t('blog.editArticle') : ui.t('blog.newArticle') }}</h3>
           <form @submit.prevent="save('published')" class="space-y-3">
             <div class="form-row-2col">
               <div class="form-group">
-                <label>Judul Artikel</label>
-                <input v-model="form.title" class="form-input" required placeholder="Masukkan judul...">
+                <label>{{ ui.t('blog.articleTitle') }}</label>
+                <input v-model="form.title" class="form-input" required :placeholder="ui.t('blog.titlePlaceholder')">
               </div>
               <div class="form-group">
-                <label>Kategori</label>
+                <label>{{ ui.t('common.category') }}</label>
                 <select v-model="form.category" class="form-input">
                   <option v-for="c in categories" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
             </div>
             <div class="form-group">
-              <label>Konten</label>
-              <textarea v-model="form.content" class="form-input text-editor" rows="10" required placeholder="Tulis konten artikel di sini... (HTML tags supported)"></textarea>
+              <label>{{ ui.t('blog.content') }}</label>
+              <textarea v-model="form.content" class="form-input text-editor" rows="10" required :placeholder="ui.t('blog.contentPlaceholder')"></textarea>
             </div>
             <div class="form-group">
-              <label>Ringkasan (opsional)</label>
-              <textarea v-model="form.excerpt" class="form-input" rows="2" placeholder="Ringkasan singkat artikel..."></textarea>
+              <label>{{ ui.t('blog.excerptOptional') }}</label>
+              <textarea v-model="form.excerpt" class="form-input" rows="2" :placeholder="ui.t('blog.excerptPlaceholder')"></textarea>
             </div>
             <div class="form-row-2col">
               <div class="form-group">
-                <label>Tags (pisahkan dengan koma)</label>
-                <input v-model="form.tags" class="form-input" placeholder="contoh: basket, latihan, kompetisi">
+                <label>{{ ui.t('blog.tagsComma') }}</label>
+                <input v-model="form.tags" class="form-input" :placeholder="ui.t('blog.tagsPlaceholder')">
               </div>
               <div class="form-group">
-                <label>Status</label>
+                <label>{{ ui.t('common.status') }}</label>
                 <select v-model="form.status" class="form-input">
-                  <option value="draft">Draft</option>
-                  <option value="published">Terbit</option>
+                  <option value="draft">{{ ui.t('blog.draft') }}</option>
+                  <option value="published">{{ ui.t('blog.published') }}</option>
                 </select>
               </div>
             </div>
 
             <!-- Gambar Sampul: Upload dari perangkat ATAU URL -->
             <div class="form-group">
-              <label>Gambar Sampul</label>
+              <label>{{ ui.t('blog.coverImage') }}</label>
               <div class="cover-options">
                 <button type="button" class="cover-option" :class="{ active: coverMode === 'upload' }" @click="coverMode = 'upload'">
-                  <Icon name="i-lucide-upload" class="w-4 h-4" /> Upload dari perangkat
+                  <Icon name="i-lucide-upload" class="w-4 h-4" /> {{ ui.t('blog.uploadFromDevice') }}
                 </button>
                 <button type="button" class="cover-option" :class="{ active: coverMode === 'url' }" @click="coverMode = 'url'">
-                  <Icon name="i-lucide-link" class="w-4 h-4" /> URL gambar (https://)
+                  <Icon name="i-lucide-link" class="w-4 h-4" /> {{ ui.t('blog.imageUrl') }}
                 </button>
               </div>
 
@@ -283,10 +283,10 @@ const categoryLabels: Record<string, string> = {
                 <label class="file-upload-btn">
                   <Icon v-if="!uploading" name="i-lucide-image-plus" class="w-4 h-4" />
                   <Icon v-else name="i-lucide-loader-2" class="w-4 h-4 spin-icon" />
-                  {{ uploading ? 'Mengupload...' : (form.coverImage ? 'Ganti Gambar' : 'Pilih Gambar dari Perangkat') }}
+                  {{ uploading ? ui.t('blog.uploading') : (form.coverImage ? ui.t('blog.changeImage') : ui.t('blog.pickImage')) }}
                   <input type="file" accept="image/*" hidden @change="handleCoverUpload">
                 </label>
-                <p class="cover-hint">Format JPG, PNG, GIF, atau WEBP. Maksimal 10MB.</p>
+                <p class="cover-hint">{{ ui.t('blog.imageFormat') }}</p>
               </div>
 
               <div v-else>
@@ -295,19 +295,19 @@ const categoryLabels: Record<string, string> = {
 
               <div v-if="form.coverImage" class="cover-preview-wrap">
                 <img :src="form.coverImage" class="cover-preview" alt="Pratinjau sampul">
-                <button type="button" class="cover-remove-btn" title="Hapus gambar" @click="removeCover">
+                <button type="button" class="cover-remove-btn" :title="ui.t('blog.removeImage')" @click="removeCover">
                   <Icon name="i-lucide-x" class="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             <div class="modal-actions">
-              <button type="button" class="btn-cancel" @click="showModal = false">Batal</button>
+              <button type="button" class="btn-cancel" @click="showModal = false">{{ ui.t('action.cancel') }}</button>
               <button type="button" class="btn-draft-save" :disabled="saving" @click="save('draft')">
-                {{ saving ? 'Menyimpan...' : 'Simpan Draft' }}
+                {{ saving ? ui.t('action.saving') : ui.t('blog.saveDraft') }}
               </button>
               <button type="submit" class="btn-primary" :disabled="saving">
-                {{ saving ? 'Menyimpan...' : (editMode ? (form.status === 'draft' ? 'Terbitkan' : 'Simpan Perubahan') : 'Terbitkan') }}
+                {{ saving ? ui.t('action.saving') : (editMode ? (form.status === 'draft' ? ui.t('blog.publish') : ui.t('blog.saveChanges')) : ui.t('blog.publish')) }}
               </button>
             </div>
           </form>
@@ -320,19 +320,19 @@ const categoryLabels: Record<string, string> = {
       <div v-if="showViews" class="modal-overlay" @click.self="showViews = false">
         <div class="modal-content" style="width:560px;">
           <div class="views-header">
-            <h3 class="modal-title" style="margin-bottom:0;">Pembaca Artikel</h3>
+            <h3 class="modal-title" style="margin-bottom:0;">{{ ui.t('blog.articleReaders') }}</h3>
             <button class="views-close" @click="showViews = false">
               <Icon name="i-lucide-x" class="w-4 h-4" />
             </button>
           </div>
           <p class="views-subtitle">
             <Icon name="i-lucide-eye" class="w-4 h-4" />
-            Total <strong>{{ viewsData?.viewCount ?? 0 }}</strong> pembaca
+            {{ ui.t('blog.totalReaders') }} <strong>{{ viewsData?.viewCount ?? 0 }}</strong>
           </p>
 
           <div v-if="viewsLoading" class="views-loading">
             <span class="spin-icon"><Icon name="i-lucide-loader-2" class="w-5 h-5" /></span>
-            Memuat daftar pembaca...
+            {{ ui.t('action.loading') }}...
           </div>
 
           <div v-else-if="viewsData?.viewers.length" class="views-list">
@@ -342,7 +342,7 @@ const categoryLabels: Record<string, string> = {
                 <div class="viewer-name">{{ v.name }}</div>
                 <div class="viewer-meta">
                   <span class="viewer-role">{{ roleLabels[v.role] || v.role }}</span>
-                  <span class="viewer-time">Terakhir dibaca {{ v.viewedAt }}</span>
+                  <span class="viewer-time">{{ ui.t('blog.lastRead') }} {{ v.viewedAt }}</span>
                 </div>
               </div>
             </div>
@@ -351,7 +351,7 @@ const categoryLabels: Record<string, string> = {
 
           <div v-else class="views-empty">
             <Icon name="i-lucide-eye-off" class="w-8 h-8 mb-2" style="color: var(--text-muted);" />
-            <p style="color: var(--text-muted); font-size: var(--text-sm);">Belum ada yang membaca artikel ini.</p>
+            <p style="color: var(--text-muted); font-size: var(--text-sm);">{{ ui.t('blog.noReaders') }}</p>
           </div>
         </div>
       </div>
@@ -372,39 +372,38 @@ const categoryLabels: Record<string, string> = {
 .btn-draft-save:hover:not(:disabled) { background: rgba(212,192,137,0.15); }
 .btn-draft-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.tab-bar { display: flex; gap: 4px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); padding: 4px; }
-.tab-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-secondary); background: none; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-.tab-btn.active { background: var(--olive-primary); color: white; }
-.tab-btn:not(.active):hover { background: var(--bg-hover); }
-.tab-count { font-size: 10px; background: rgba(0,0,0,0.1); padding: 1px 6px; border-radius: 8px; }
-.tab-btn.active .tab-count { background: rgba(255,255,255,0.2); }
+.tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border-light); }
+.tab-btn { display: flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-muted); background: none; border: none; cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent; }
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+.tab-btn:not(.active):hover { color: var(--text-secondary); }
+.tab-count { font-size: 11px; color: var(--text-muted); font-weight: var(--font-normal); }
 
 .article-list { display: flex; flex-direction: column; gap: 12px; }
-.article-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 16px 20px; transition: all 0.2s; cursor: pointer; }
-.article-card:hover { border-color: var(--olive-light); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.article-card { background: var(--bg-card); border: 1px solid var(--border-light); padding: 16px 20px; transition: all 0.15s; cursor: pointer; }
+.article-card:hover { border-color: var(--border-medium); }
 .article-card:hover .article-title { color: var(--olive-primary); }
 .article-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .article-meta { display: flex; gap: 8px; flex-wrap: wrap; }
-.article-ekskul { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 8px; border-radius: 6px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-semibold); }
+.article-ekskul { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); font-weight: var(--font-medium); }
 .ekskul-logo-img { width: 16px; height: 16px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
-.article-category { font-size: 10px; padding: 2px 8px; border-radius: 6px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
-.article-status { font-size: 10px; padding: 2px 8px; border-radius: 6px; font-weight: var(--font-medium); }
-.status-pub { background: rgba(74,158,158,0.15); color: var(--teal); }
-.status-draft { background: rgba(212,192,137,0.2); color: var(--orange); }
+.article-category { font-size: 12px; color: var(--text-secondary); }
+.article-status { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+.article-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-pub::before { background: var(--teal); }
+.status-draft::before { background: var(--orange); }
 .article-actions { display: flex; gap: 4px; }
 .action-btn { background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 14px; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .action-btn:hover { background: var(--bg-hover); }
+.action-btn.danger { color: var(--red-orange); }
+.action-btn.danger:hover { background: rgba(220,38,38,0.1); }
 .article-title { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 4px; }
 .article-excerpt { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); margin-bottom: 8px; }
 .article-footer { display: flex; align-items: center; gap: 12px; font-size: var(--text-xs); color: var(--text-muted); padding-top: 12px; border-top: 1px solid var(--border-light); flex-wrap: wrap; }
 .article-author { font-weight: var(--font-medium); color: var(--text-secondary); }
-.btn-viewers { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-light); background: white; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
-.btn-viewers:hover { border-color: var(--olive-primary); color: var(--olive-primary); background: var(--olive-bg); }
-.btn-toggle-status { font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 1px solid; cursor: pointer; font-family: var(--font-family); margin-left: auto; }
-.btn-publish { background: rgba(74,158,158,0.1); color: var(--teal); border-color: var(--teal); }
-.btn-publish:hover { background: rgba(74,158,158,0.2); }
-.btn-draft { background: rgba(212,106,90,0.1); color: var(--red-orange); border-color: var(--red-orange); }
-.btn-draft:hover { background: rgba(212,106,90,0.2); }
+.btn-viewers { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); cursor: pointer; background: none; border: none; padding: 0; font-family: var(--font-family); }
+.btn-viewers:hover { color: var(--text-secondary); }
+.btn-toggle-status { font-size: 11px; color: var(--text-muted); cursor: pointer; font-family: var(--font-family); margin-left: auto; background: none; border: none; padding: 0; text-decoration: underline; }
+.btn-toggle-status:hover { color: var(--text-primary); }
 
 /* Gambar sampul */
 .cover-options { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -430,7 +429,7 @@ const categoryLabels: Record<string, string> = {
 .viewer-info { flex: 1; min-width: 0; }
 .viewer-name { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
 .viewer-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.viewer-role { padding: 1px 8px; border-radius: 8px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
+.viewer-role { color: var(--text-muted); }
 .views-loading { display: flex; align-items: center; gap: 8px; padding: 32px; justify-content: center; color: var(--text-muted); font-size: var(--text-sm); }
 .views-empty { display: flex; flex-direction: column; align-items: center; padding: 40px; }
 .spin-icon { display: inline-flex; animation: spin 0.8s linear infinite; }

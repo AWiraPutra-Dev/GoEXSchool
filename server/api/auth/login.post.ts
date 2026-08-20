@@ -2,6 +2,7 @@ import { prisma } from '~~/server/utils/prisma'
 import { generateToken } from '~~/server/utils/jwt'
 import { compare } from 'bcrypt-ts'
 import { toInstitutionSummary } from '~~/server/utils/institution'
+import { normalizePerm } from '~~/app/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const { identifier, password, role } = await readBody(event)
@@ -70,7 +71,7 @@ export default defineEventHandler(async (event) => {
       phone: user.phone,
       avatar: user.avatarUrl || null,
       extracurricular: user.extracurricularOperator ? { id: user.extracurricularOperator.id, name: user.extracurricularOperator.name } : null,
-      permissions: user.permissions.map(p => p.permissionId)
+      permissions: user.permissions.map(p => normalizePerm(p.permissionId))
     },
     institution: toInstitutionSummary(user.institution)
   }

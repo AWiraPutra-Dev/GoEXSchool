@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 export interface AttendanceRecord {
-  id: string; date: string; ekskul: string; status: string; time: string; notes: string
+  id: string; date: string; ekskul: string; status: string; time: string; notes: string; monthKey?: string
 }
 export interface Achievement {
   id: string; title: string; description: string; date: string; dateIso?: string; type: 'juara' | 'sertifikat' | 'partisipasi' | 'organisasi'; ekskul: string; ekskulId: string; level: 'sekolah' | 'kecamatan' | 'kota' | 'provinsi' | 'nasional'; proof?: string; studentName?: string; studentClass?: string
@@ -10,21 +10,23 @@ export interface FeedPost {
   id: string; type: 'announcement' | 'achievement' | 'gallery' | 'poll' | 'schedule'; title: string; content: string; author: string; avatar: string; date: string; likes: number; liked: boolean; comments: Array<{ id: string; user: string; avatar: string; text: string; time: string }>; commentCount: number
 }
 export interface StudentSchedule {
-  [day: string]: Array<{ time: string; ekskul: string; coach: string; location: string }>
+  [day: string]: Array<{ time: string; date?: string | null; ekskul: string; coach: string; location: string }>
 }
 export interface SiswaPoll {
   id: string; question: string; options: Array<{ id: string; label: string; votes: number }>; ekskul: string; ekskulLogo?: string | null; endDate: string; active: boolean; myVote: string | null; totalVotes: number
 }
 export interface SiswaGallery {
-  id: string; title: string; ekskul: string; ekskulLogo?: string | null; date: string; color: string; imageCount: number; previews: string[]
+  id: string; title: string; ekskul: string; ekskulLogo?: string | null; author?: string | null; date: string; color: string; imageCount: number; previews: string[]
+}
+export interface BoardTile {
+  id: string; type: 'person' | 'image'; name: string; className: string | null; position: string; photoUrl: string | null; imageUrl?: string | null; sortOrder: number
 }
 export interface BoardGroup {
   id: string; ekskul: string; ekskulLogo?: string | null
-  mode: 'cards' | 'image'; imageUrl: string | null; theme: string
-  positions: Array<{ id: string; name: string; className: string | null; position: string; photoUrl: string | null; sortOrder: number }>
+  positions: BoardTile[]
 }
 export interface SiswaNews {
-  id: string; title: string; content: string; isPublic: boolean; ekskul: string; ekskulLogo?: string | null; ekskulId: string; author: string; date: string
+  id: string; title: string; content: string; isPublic: boolean; ekskul: string; ekskulLogo?: string | null; ekskulId: string; author: string; coverImage?: string | null; date: string
 }
 
 export const useSiswaDataStore = defineStore('siswaData', {
@@ -151,6 +153,12 @@ export const useSiswaDataStore = defineStore('siswaData', {
     async deleteAchievement(id: string) {
       await $fetch(`/api/siswa/achievements/${id}`, { method: 'DELETE' })
       this.achievements = this.achievements.filter(a => a.id !== id)
+    },
+
+    /** Admin: tambah portofolio prestasi untuk siswa mana pun. */
+    async addAchievementAdmin(data: { studentId: string; title: string; description?: string; date: string; type: string; extracurricularId: string; level: string; proof?: string }) {
+      const a = await $fetch<Achievement>('/api/admin/achievements', { method: 'POST', body: data })
+      this.achievements.unshift(a)
     },
 
     /** Admin: ubah prestasi siswa mana pun di instansi (endpoint khusus admin). */

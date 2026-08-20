@@ -8,6 +8,9 @@ const ALLOWED_TYPES = [
   'application/vnd.ms-excel',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/zip',
   'image/jpeg',
   'image/png',
   'image/gif',
@@ -36,7 +39,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!ALLOWED_TYPES.includes(fileField.type as string)) {
-    throw createError({ statusCode: 400, message: 'Tipe file tidak diizinkan. Gunakan PDF, gambar, atau dokumen.' })
+    throw createError({ statusCode: 400, message: 'Tipe file tidak diizinkan. Gunakan PDF, gambar, video, atau dokumen.' })
   }
 
   if ((fileField.data.length) > MAX_SIZE) {

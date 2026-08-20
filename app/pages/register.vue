@@ -63,10 +63,7 @@ async function handleRegister() {
     <div class="register-card">
       <!-- Branding -->
       <div class="brand">
-        <div class="brand-logo">
-          <Icon name="i-lucide-school" class="w-6 h-6" />
-        </div>
-        <h1 class="brand-title">StudentBase</h1>
+        <img src="/logos/studentbase.svg" alt="StudentBase" class="brand-logo-img" />
         <p class="brand-subtitle">Daftar akun siswa untuk mengikuti ekskul</p>
       </div>
 
@@ -251,25 +248,12 @@ async function handleRegister() {
   margin-bottom: 28px;
 }
 
-.brand-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: var(--bg-hover);
-  border: 1px solid var(--border-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  margin: 0 auto 16px;
-}
-
-.brand-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-  margin-bottom: 6px;
+.brand-logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 14px;
 }
 
 .brand-subtitle {
@@ -405,7 +389,7 @@ async function handleRegister() {
   padding: 10px 12px;
   background: #fef2f2;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 12px;
   color: #dc2626;
 }

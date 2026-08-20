@@ -55,7 +55,7 @@ const categoryLabels: Record<string, string> = {
         <div class="article-body">
           <div class="article-category">{{ categoryLabels[article.category] || article.category }}</div>
           <h3 class="article-title"><TranslatedText :text="article.title" /></h3>
-          <p class="article-excerpt"><TranslatedText :text="article.excerpt || article.content?.slice(0, 120) + '...'" /></p>
+          <p class="article-excerpt"><TranslatedText :text="article.excerpt || article.content?.slice(0, 120) + '...'" strip-html /></p>
           <div class="article-footer">
             <span v-if="article.ekskulLogo" class="ekskul-logo-chip">
               <img :src="article.ekskulLogo" class="ekskul-logo-img" alt="" />
@@ -81,17 +81,17 @@ const categoryLabels: Record<string, string> = {
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
 .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chip { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-light); background: white; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.chip { padding: 6px 14px; border-radius: 4px; border: 1px solid var(--border-light); background: white; font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
 .chip.active { background: var(--olive-primary); color: white; border-color: var(--olive-primary); }
 .chip:not(.active):hover { background: var(--bg-hover); }
 
-.article-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.article-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .article-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 10px; overflow: hidden; cursor: pointer; transition: all 0.2s; text-decoration: none; }
-.article-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.article-card:hover { border-color: var(--border-medium); box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
 .article-cover { height: 160px; background-size: cover; background-position: center; }
 .article-cover-placeholder { display: flex; align-items: center; justify-content: center; background: var(--olive-primary); }
 .article-body { padding: 16px 20px; }
-.article-category { font-size: 10px; padding: 2px 8px; border-radius: 6px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); display: inline-block; margin-bottom: 8px; }
+.article-category { font-size: 12px; font-weight: var(--font-semibold); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: inline-block; margin-bottom: 8px; }
 .article-title { font-size: var(--text-md); font-weight: var(--font-bold); color: var(--text-primary); margin-bottom: 6px; line-height: 1.4; }
 .article-excerpt { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); margin-bottom: 12px; }
 .article-footer { display: flex; align-items: center; gap: 12px; font-size: var(--text-xs); color: var(--text-muted); padding-top: 12px; border-top: 1px solid var(--border-light); }

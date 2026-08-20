@@ -34,15 +34,3 @@ export async function refreshRoleData() {
   }
 }
 
-/**
- * Menyegarkan notifikasi untuk role yang sedang login (dipakai bell di TopBar
- * dan panel dashboard). Dipanggil secara berkala agar notifikasi real-time.
- */
-export async function refreshNotifications() {
-  if (!process.client) return
-  const auth = useAuthStore()
-  if (!auth.isLoggedIn) return
-  try {
-    await $fetch('/api/siswa/notifications')
-  } catch {}
-}

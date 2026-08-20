@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
   return records.map(r => ({
     id: r.id,
     date: r.date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
+    monthKey: r.date.toISOString().slice(0, 7),
     ekskul: r.extracurricular.name,
     status: r.status === 'hadir' ? 'Hadir' : r.status === 'izin' ? 'Izin' : 'Alpha',
     time: r.time || '-',

@@ -19,11 +19,11 @@
 }
 
 .main-content {
-  margin-top: 50px;
+  margin-top: 92px;
   margin-left: 260px;
   margin-bottom: 40px;
   padding: 20px;
-  min-height: calc(100vh - 90px);
+  min-height: calc(100vh - 132px);
 }
 
 :root[dir="rtl"] .main-content {

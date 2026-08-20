@@ -73,7 +73,7 @@ async function removeMember(m: any) {
             <td><span class="ekskul-tag">{{ m.ekskul }}</span></td>
             <td style="color: var(--text-secondary);">{{ m.joinDate }}</td>
             <td>
-              <span class="status-badge" :class="m.status === 'active' ? 'status-active' : 'status-inactive'" @click="op.toggleMemberStatus(m.id)" style="cursor:pointer;">
+              <span class="status-dot" :class="m.status === 'active' ? 'active' : 'inactive'" @click="op.toggleMemberStatus(m.id)" style="cursor:pointer;">
                 {{ m.status === 'active' ? 'Aktif' : 'Nonaktif' }}
               </span>
             </td>
@@ -106,32 +106,33 @@ async function removeMember(m: any) {
 
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
-.btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; }
+.btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--olive-primary); color: white; font-size: var(--text-sm); font-weight: var(--font-semibold); padding: 7px 14px; border: none; cursor: pointer; }
 .btn-primary:hover { background: var(--olive-dark); }
-.btn-cancel { background: white; color: var(--text-secondary); font-size: var(--text-sm); padding: 8px 20px; border-radius: 6px; border: 1px solid var(--border-light); cursor: pointer; }
-.table-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); overflow: hidden; }
+.btn-cancel { background: white; color: var(--text-secondary); font-size: var(--text-sm); padding: 7px 18px; border: 1px solid var(--border-light); cursor: pointer; }
+.table-card { background: var(--bg-card); border: 1px solid var(--border-light); }
 .table-toolbar { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-light); }
-.filter-select, .search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); color: var(--text-primary); }
+.filter-select, .search-input { border: 1px solid var(--border-light); padding: 7px 10px; font-size: var(--text-sm); color: var(--text-primary); }
 .search-input { width: 200px; }
 .filter-select:focus, .search-input:focus { outline: none; border-color: var(--olive-primary); }
 .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .data-table th { text-align: left; padding: 10px 16px; font-weight: var(--font-semibold); background: var(--bg-main); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase; }
 .data-table td { padding: 10px 16px; border-top: 1px solid var(--border-light); }
-.ekskul-tag { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); }
-.status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); }
+.ekskul-tag { font-size: var(--text-sm); color: var(--text-secondary); }
+.status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; font-weight: var(--font-medium); }
 .status-active { background: rgba(74,158,158,0.15); color: var(--teal); }
 .status-inactive { background: rgba(212,106,90,0.15); color: var(--red-orange); }
 .delete-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 8px; opacity: 0.5; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; }
 .delete-btn:hover { opacity: 1; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: white; border-radius: 12px; padding: 24px; width: 500px; max-width: 90vw; }
+.modal-content { background: white; padding: 24px; width: 500px; max-width: 90vw; }
 .modal-title { font-size: var(--text-lg); font-weight: var(--font-bold); margin-bottom: 20px; color: var(--text-primary); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-group label { display: block; font-size: var(--text-sm); font-weight: var(--font-medium); margin-bottom: 4px; color: var(--text-primary); }
-.form-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 6px; font-size: var(--text-sm); color: var(--text-primary); }
+.form-input { width: 100%; padding: 7px 10px; border: 1px solid var(--border-light); font-size: var(--text-sm); color: var(--text-primary); }
 .form-input:focus { outline: none; border-color: var(--olive-primary); }
-.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
-.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--border-light); font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-secondary); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid #fecaca; font-size: var(--text-sm); font-weight: var(--font-medium); color: var(--red-orange); background: #fef2f2; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.data-table th.text-right, .data-table td.text-right { text-align: right; }
 .text-right { text-align: right; }
 </style>

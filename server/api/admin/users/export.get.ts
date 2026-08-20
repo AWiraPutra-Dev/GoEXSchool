@@ -1,5 +1,6 @@
-import XLSX from 'xlsx'
 import { prisma } from '~~/server/utils/prisma'
+
+// xlsx diimpor dinamis agar tidak ikut dimuat saat server start.
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
@@ -9,6 +10,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 // Export seluruh akun user di instansi ke Excel (untuk data dalam jumlah besar).
 export default defineEventHandler(async (event) => {
+  const XLSX = (await import('xlsx')).default
   const auth = event.context.auth as { institutionId: string }
   const users = await prisma.user.findMany({
     where: { institutionId: auth.institutionId },

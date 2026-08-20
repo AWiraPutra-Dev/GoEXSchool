@@ -1,4 +1,5 @@
-import XLSX from 'xlsx'
+// xlsx diimpor dinamis (await import) agar tidak dimuat saat server start —
+// hanya dimuat saat endpoint export Excel benar-benar dipanggil.
 import { reportBuilders, isReportType, attendanceRows, type ReportType } from '~~/server/utils/reports'
 
 function fmtDate(d: Date | string) {
@@ -6,7 +7,7 @@ function fmtDate(d: Date | string) {
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function buildWorkbook(type: ReportType, data: any) {
+function buildWorkbook(XLSX: typeof import('xlsx'), type: ReportType, data: any) {
   const wb = XLSX.utils.book_new()
 
   if (type === 'students') {
@@ -91,20 +92,41 @@ function buildWorkbook(type: ReportType, data: any) {
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as { institutionId: string }
-  const type = (getQuery(event).type as string) || ''
+  const q = getQuery(event)
+  const type = (q.type as string) || ''
 
   if (!isReportType(type)) {
     throw createError({ statusCode: 400, message: 'Tipe laporan tidak dikenal.' })
   }
 
-  const data = await reportBuilders[type](auth.institutionId)
+  const builder = reportBuilders[type] as Function
+  let data: any
+
+  if (type === 'achievements') {
+    const { achievementsReport } = await import('~~/server/utils/reports')
+    data = await achievementsReport(auth.institutionId, {
+      level: (q.level as string) || undefined,
+      class: (q.class as string) || undefined,
+    })
+  } else if (type === 'annual') {
+    const { annualReport } = await import('~~/server/utils/reports')
+    data = await annualReport(auth.institutionId, {
+      ekskul: (q.ekskul as string) || undefined,
+      class: (q.class as string) || undefined,
+    })
+  } else {
+    data = await builder(auth.institutionId)
+  }
+
   // Catatan kehadiran tidak disertakan di payload laporan (agar ringan),
   // jadi untuk export Excel diambil terpisah tanpa filter & tanpa paginasi.
   if (type === 'attendance') {
     const { records } = await attendanceRows(auth.institutionId)
     ;(data as any).records = records
   }
-  const wb = buildWorkbook(type, data)
+
+  const XLSX = (await import('xlsx')).default
+  const wb = buildWorkbook(XLSX, type, data)
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
 
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')

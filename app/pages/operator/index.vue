@@ -118,7 +118,7 @@ const chartColors = computed(() => accentChartPalette(auth.institution?.themeCol
 .welcome-section { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
 .header-actions { display: flex; align-items: center; gap: 8px; }
-.date-badge { font-size: var(--text-sm); color: var(--text-secondary); background: var(--bg-card); padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-light); white-space: nowrap; }
+.date-badge { font-size: var(--text-sm); color: var(--text-secondary); background: var(--bg-card); padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border-light); white-space: nowrap; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 .content-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -131,8 +131,8 @@ const chartColors = computed(() => accentChartPalette(auth.institution?.themeCol
 .panel-list-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-light); transition: background 0.15s; }
 .panel-list-item:hover { background: var(--bg-hover); }
 .panel-list-item:last-child { border-bottom: none; }
-.time-badge { font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--olive-primary); background: var(--olive-bg); border: 1px solid var(--border-light); padding: 4px 8px; border-radius: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
-.optional-badge { font-size: 10px; padding: 1px 8px; border-radius: 8px; background: rgba(212,192,137,0.25); color: #A8863C; font-weight: var(--font-medium); }
+.time-badge { font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--olive-primary); background: var(--olive-bg); border: 1px solid var(--border-light); padding: 4px 8px; border-radius: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.optional-badge { font-size: 12px; padding: 1px 8px; border-radius: 4px; background: rgba(212,192,137,0.25); color: #A8863C; font-weight: var(--font-medium); }
 .panel-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px; color: var(--text-muted); font-size: var(--text-sm); }
 .schedule-icon-wrapper { width: 36px; height: 36px; border-radius: 8px; background: var(--olive-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .activity-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }

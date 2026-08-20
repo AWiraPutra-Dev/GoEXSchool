@@ -118,6 +118,7 @@ async function removeGallery(g: GalleryItem) {
                 <span v-else>{{ g.ekskul }}</span>
                 · {{ g.date }}
               </p>
+              <p v-if="g.author" class="gallery-uploader"><Icon name="i-lucide-user" class="w-3 h-3" /> Diunggah oleh {{ g.author }}</p>
             </div>
             <button class="gallery-delete-btn" @click.stop="removeGallery(g)" title="Hapus"><Icon name="i-lucide-trash-2" class="w-4 h-4" /></button>
           </div>
@@ -240,10 +241,11 @@ async function removeGallery(g: GalleryItem) {
 .search-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
 .gallery-thumb { height: 150px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .gallery-thumb-img { width: 100%; height: 100%; object-fit: cover; }
-.gallery-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.5); color: white; font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; }
+.gallery-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.5); color: white; font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; }
 .gallery-info { padding: 12px 16px; }
 .gallery-title { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--text-primary); }
 .gallery-meta { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gallery-uploader { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--text-secondary); margin-top: 4px; }
 .ekskul-logo-chip { display: inline-flex; align-items: center; gap: 4px; }
 .ekskul-logo-img { width: 18px; height: 18px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
 .gallery-delete-btn { background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 14px; opacity: 0; transition: opacity 0.2s; display: inline-flex; align-items: center; justify-content: center; }
@@ -263,8 +265,8 @@ async function removeGallery(g: GalleryItem) {
 .color-picker { display: flex; gap: 8px; }
 .color-swatch { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: all 0.2s; }
 .color-swatch.selected { border-color: var(--olive-primary); transform: scale(1.15); }
-.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
-.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 6px; font-size: var(--text-sm); font-weight: var(--font-medium); }
+.scope-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--olive-bg); color: var(--olive-primary); border: 1px solid var(--olive-light); border-radius: 4px; font-size: var(--text-sm); font-weight: var(--font-semibold); }
+.scope-warning { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: #fef2f2; color: var(--red-orange); border: 1px solid #fecaca; border-radius: 4px; font-size: var(--text-sm); font-weight: var(--font-medium); }
 .photo-upload-area { border: 1.5px dashed var(--border-light); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
 .photo-upload-area:hover { border-color: var(--olive-primary); background: var(--olive-bg); }
 .photo-input-hidden { position: absolute; inset: 0; opacity: 0; cursor: pointer; }

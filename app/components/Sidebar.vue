@@ -21,7 +21,6 @@ const menusByRole: Record<string, MenuItem[]> = {
     { label: 'Kepengurusan', icon: 'i-lucide-user-cog', to: '/admin/board', section: 'Data Master' },
     { label: 'Jadwal Ekskul', icon: 'i-lucide-calendar', to: '/admin/schedule', section: 'Kegiatan' },
     { label: 'Absensi', icon: 'i-lucide-check-square', to: '/admin/attendance', section: 'Kegiatan' },
-    { label: 'Surat Izin', icon: 'i-lucide-file-text', to: '/admin/izin', section: 'Kegiatan' },
     { label: 'Feed Komunitas', icon: 'i-lucide-newspaper', to: '/admin/feed', section: 'Konten' },
     { label: 'Blog & Artikel', icon: 'i-lucide-file-text', to: '/admin/blog', section: 'Konten' },
     { label: 'Voting', icon: 'i-lucide-vote', to: '/admin/polls', section: 'Konten' },
@@ -35,7 +34,6 @@ const menusByRole: Record<string, MenuItem[]> = {
   operator: [
     { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/operator', section: 'Utama' },
     { label: 'Absensi QR', icon: 'i-lucide-qr-code', to: '/operator/attendance', section: 'Kegiatan' },
-    { label: 'Surat Izin', icon: 'i-lucide-file-text', to: '/operator/izin', section: 'Kegiatan' },
     { label: 'Jadwal Ekskul', icon: 'i-lucide-calendar', to: '/operator/schedule', section: 'Kegiatan' },
     { label: 'Materi Ekskul', icon: 'i-lucide-book-open', to: '/operator/materials', section: 'Kegiatan' },
     { label: 'Anggota Ekskul', icon: 'i-lucide-users', to: '/operator/members', section: 'Data' },
@@ -52,7 +50,6 @@ const menusByRole: Record<string, MenuItem[]> = {
     { label: 'Jadwal Saya', icon: 'i-lucide-calendar', to: '/siswa/schedule', section: 'Aktivitas' },
     { label: 'Kalender', icon: 'i-lucide-calendar-days', to: '/siswa/calendar', section: 'Aktivitas' },
     { label: 'Kehadiran', icon: 'i-lucide-check-square', to: '/siswa/attendance', section: 'Aktivitas' },
-    { label: 'Surat Izin', icon: 'i-lucide-file-text', to: '/siswa/izin', section: 'Aktivitas' },
     { label: 'Materi Ekskul', icon: 'i-lucide-book-open', to: '/siswa/materials', section: 'Aktivitas' },
     { label: 'Voting', icon: 'i-lucide-vote', to: '/siswa/polls', section: 'Partisipasi' },
     { label: 'Feed Komunitas', icon: 'i-lucide-newspaper', to: '/siswa/feed', section: 'Partisipasi' },
@@ -67,7 +64,7 @@ const menusByRole: Record<string, MenuItem[]> = {
 
 const menu = computed(() => menusByRole[auth.user?.role ?? 'student'] ?? [])
 
-// Group menu items by section — setiap section menjadi grup dropdown.
+// Group menu items by section.
 const menuSections = computed(() => {
   const sections: { name: string; items: MenuItem[] }[] = []
   const grouped = new Map<string, MenuItem[]>()
@@ -88,28 +85,6 @@ const menuSections = computed(() => {
 function isActive(item: MenuItem): boolean {
   return route.path === item.to
 }
-
-// ---- Dropdown: anak fitur disembunyikan dulu, muncul saat judul fitur diklik ----
-const openSections = ref<string[]>([])
-
-function isOpen(name: string): boolean {
-  return openSections.value.includes(name)
-}
-
-function toggleSection(name: string) {
-  openSections.value = isOpen(name)
-    ? openSections.value.filter(s => s !== name)
-    : [...openSections.value, name]
-}
-
-// Buka otomatis grup yang berisi halaman aktif (saat pertama masuk & saat pindah halaman)
-function openActiveSection() {
-  const active = menu.value.find(item => isActive(item))
-  if (active && !isOpen(active.section)) {
-    openSections.value = [...openSections.value, active.section]
-  }
-}
-watch(() => route.path, openActiveSection, { immediate: true })
 
 // Terjemahkan label menu & section lewat kamus i18n.
 const menuKeyMap: Record<string, string> = {
@@ -151,70 +126,29 @@ const sectionKeyMap: Record<string, string> = {
   Pengaturan: 'section.settings',
 }
 
-// Ikon tiap grup (main feature) agar judul grup tampil seperti menu item biasa
-const sectionIconMap: Record<string, string> = {
-  'Data Master': 'i-lucide-database',
-  Kegiatan: 'i-lucide-calendar-days',
-  Konten: 'i-lucide-layout-grid',
-  Pengaturan: 'i-lucide-settings',
-  Data: 'i-lucide-folder-open',
-  Partisipasi: 'i-lucide-heart-handshake',
-}
-const sectionIcon = (name: string) => sectionIconMap[name] ?? 'i-lucide-folder'
-
 const tMenu = (label: string) => ui.t(menuKeyMap[label] ?? label)
 const tSection = (name: string) => ui.t(sectionKeyMap[name] ?? name)
 </script>
 
 <template>
   <aside class="sidebar">
-    <nav>
+    <nav class="sidebar-nav">
       <template v-for="section in menuSections" :key="section.name">
-        <!-- Grup isi 1 item → tampil langsung sebagai fitur utama -->
-        <template v-if="section.items.length === 1">
-          <NuxtLink
-            v-for="item in section.items"
-            :key="item.to"
-            :to="item.to"
-            class="menu-item"
-            :class="{ active: isActive(item) }"
-            :prefetch="true"
-          >
-            <Icon :name="item.icon" class="menu-icon" />
-            <span>{{ tMenu(item.label) }}</span>
-          </NuxtLink>
-        </template>
+        <!-- Label section kecil -->
+        <div class="section-label">{{ tSection(section.name) }}</div>
 
-        <!-- Grup berisi beberapa fitur → dropdown: judul fitur + anak yang tersembunyi -->
-        <div v-else class="menu-group">
-          <button
-            type="button"
-            class="menu-group-header"
-            :class="{ open: isOpen(section.name), 'has-active': section.items.some(isActive) }"
-            :aria-expanded="isOpen(section.name)"
-            @click="toggleSection(section.name)"
-          >
-            <Icon :name="sectionIcon(section.name)" class="menu-icon" />
-            <span class="menu-group-title">{{ tSection(section.name) }}</span>
-            <Icon name="i-lucide-chevron-down" class="menu-chevron" />
-          </button>
-
-          <Transition name="menu-drop">
-            <div v-if="isOpen(section.name)" class="menu-group-items">
-              <NuxtLink
-                v-for="item in section.items"
-                :key="item.to"
-                :to="item.to"
-                class="menu-item"
-                :class="{ active: isActive(item) }"
-                :prefetch="true"
-              >
-                <Icon :name="item.icon" class="menu-icon" />
-                <span>{{ tMenu(item.label) }}</span>
-              </NuxtLink>
-            </div>
-          </Transition>
-        </div>
+        <!-- Semua item flat, rata kiri, tanpa dropdown -->
+        <NuxtLink
+          v-for="item in section.items"
+          :key="item.to"
+          :to="item.to"
+          class="menu-item"
+          :class="{ active: isActive(item) }"
+          :prefetch="true"
+        >
+          <Icon :name="item.icon" class="menu-icon" />
+          <span class="menu-label">{{ tMenu(item.label) }}</span>
+        </NuxtLink>
       </template>
     </nav>
 
@@ -222,7 +156,7 @@ const tSection = (name: string) => ui.t(sectionKeyMap[name] ?? name)
     <div class="logout-section">
       <button class="menu-item logout-item" @click="auth.logout()">
         <Icon name="i-lucide-log-out" class="menu-icon" />
-        <span>{{ ui.t('menu.logout') }}</span>
+        <span class="menu-label">{{ ui.t('menu.logout') }}</span>
       </button>
     </div>
   </aside>
@@ -231,14 +165,14 @@ const tSection = (name: string) => ui.t(sectionKeyMap[name] ?? name)
 <style scoped>
 .sidebar {
   position: fixed;
-  top: 50px;
+  top: 92px;
   left: 0;
   bottom: 40px;
   width: 260px;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-light);
   overflow-y: auto;
-  padding: 16px 0;
+  padding: 16px 12px 12px;
   display: flex;
   flex-direction: column;
   z-index: 90;
@@ -251,104 +185,38 @@ const tSection = (name: string) => ui.t(sectionKeyMap[name] ?? name)
   border-left: 1px solid var(--border-light);
 }
 
-.sidebar nav {
+.sidebar-nav {
   flex: 1;
 }
 
-/* ===== Grup dropdown — minimalis, tampil seperti menu item biasa ===== */
-.menu-group {
-  margin-top: 2px;
-}
-
-.menu-group-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 20px;
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: var(--text-primary);
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  border-left: 3px solid transparent;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.menu-group-header:hover {
-  background: var(--bg-hover);
-}
-
-.menu-group-title {
-  flex: 1;
-  text-align: left;
-}
-
-:root[dir="rtl"] .menu-group-title {
-  text-align: right;
-}
-
-.menu-group-header.has-active {
-  color: var(--accent);
+/* ===== Label section — kecil, samar, rapi ===== */
+.section-label {
+  padding: 14px 12px 6px;
+  font-size: 12px;
   font-weight: var(--font-semibold);
-}
-
-/* Chevron kecil & samar — baru terlihat jelas saat hover/terbuka */
-.menu-chevron {
-  width: 14px;
-  height: 14px;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
-  opacity: 0.45;
-  flex-shrink: 0;
-  transition: transform 0.2s ease, opacity 0.2s ease, color 0.2s ease;
 }
 
-.menu-group-header:hover .menu-chevron {
-  opacity: 1;
+.section-label:first-child {
+  padding-top: 2px;
 }
 
-.menu-group-header.open .menu-chevron {
-  transform: rotate(180deg);
-  color: var(--accent);
-  opacity: 1;
-}
-
-.menu-group-items {
-  padding: 2px 0 4px;
-}
-
-/* Anak fitur menjorok jelas di bawah judul fiturnya */
-.menu-group-items .menu-item {
-  padding-left: 36px;
-}
-
-/* Transisi halus saat buka/tutup dropdown */
-.menu-drop-enter-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
-}
-.menu-drop-leave-active {
-  transition: opacity 0.12s ease;
-}
-.menu-drop-enter-from {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-.menu-drop-leave-to {
-  opacity: 0;
-}
-
+/* ===== Menu item — flat, minimal ===== */
 .menu-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 20px;
+  width: 100%;
+  padding: 7px 12px;
+  margin: 1px 0;
   font-size: var(--text-sm);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 3px solid transparent;
+  background: transparent;
+  border: none;
   text-decoration: none;
+  transition: background 0.15s ease;
 }
 
 .menu-item:hover {
@@ -356,15 +224,14 @@ const tSection = (name: string) => ui.t(sectionKeyMap[name] ?? name)
 }
 
 .menu-item:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
-/* Item aktif: highlight lembut (tint) alih-alih blok warna solid — lebih modern & profesional */
+/* Item aktif: pill lembut aksen — clean, tanpa garis kiri */
 .menu-item.active {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: var(--font-semibold);
-  border-left-color: var(--accent);
 }
 
 .menu-item.active .menu-icon {
@@ -372,16 +239,27 @@ const tSection = (name: string) => ui.t(sectionKeyMap[name] ?? name)
 }
 
 .menu-icon {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   color: var(--text-secondary);
   flex-shrink: 0;
+}
+
+.menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+:root[dir="rtl"] .menu-label {
+  text-align: right;
 }
 
 .logout-section {
   border-top: 1px solid var(--border-light);
   padding-top: 8px;
-  margin-top: auto;
+  margin-top: 8px;
 }
 
 .logout-item {

@@ -31,6 +31,8 @@ onMounted(async () => {
         <span class="news-author">Oleh: {{ news.author }}</span>
       </div>
 
+      <img v-if="news.coverImage" :src="news.coverImage" :alt="news.title" class="news-cover" />
+
       <h1 class="news-title"><TranslatedText :text="news.title" /></h1>
 
       <div class="news-content" v-html="news.content"></div>
@@ -54,8 +56,9 @@ onMounted(async () => {
 .back-link:hover { text-decoration: underline; }
 .news-container { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 12px; padding: 32px 40px; }
 .news-meta-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-.news-ekskul { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 12px; border-radius: 6px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-semibold); }
+.news-ekskul { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 12px; border-radius: 4px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-semibold); }
 .ekskul-logo-img { width: 18px; height: 18px; border-radius: 50%; object-fit: contain; background: white; border: 1px solid var(--border-light); }
+.news-cover { width: 100%; max-height: 380px; object-fit: cover; border-radius: 10px; margin-bottom: 20px; }
 .news-date, .news-author { font-size: var(--text-sm); color: var(--text-muted); }
 .news-title { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1.3; margin-bottom: 24px; }
 .news-content { font-size: var(--text-md); color: var(--text-primary); line-height: 1.8; }

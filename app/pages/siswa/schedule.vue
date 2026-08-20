@@ -18,6 +18,13 @@ const { page, paged, totalPages } = usePagination(() => daySchedule.value)
 
 const scheduleCount = computed(() => Object.values(siswa.mySchedule).reduce((sum, arr) => sum + arr.length, 0))
 const ekskulCount = computed(() => [...new Set(Object.values(siswa.mySchedule).flat().map(s => s.ekskul))].length)
+
+function formatDate(iso?: string | null) {
+  if (!iso) return ''
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  return new Date(y, m - 1, d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 </script>
 
 <template>
@@ -34,6 +41,7 @@ const ekskulCount = computed(() => [...new Set(Object.values(siswa.mySchedule).f
         <div class="schedule-info">
           <h4 class="font-semibold text-[13px]">{{ s.ekskul }}</h4>
           <p class="text-[12px]" style="color: var(--text-secondary);">{{ s.coach }} · {{ s.location }}</p>
+          <p v-if="s.date" class="text-[11px] schedule-date-text"><Icon name="i-lucide-calendar" class="w-3 h-3" /> Pertemuan: {{ formatDate(s.date) }}</p>
         </div>
       </div>
       <div v-if="!daySchedule.length" class="empty-state">
@@ -63,8 +71,9 @@ const ekskulCount = computed(() => [...new Set(Object.values(siswa.mySchedule).f
 .schedule-list { display: flex; flex-direction: column; gap: 8px; }
 .schedule-item { display: flex; align-items: center; gap: 16px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 14px 20px; transition: all 0.2s; }
 .schedule-item:hover { border-color: var(--olive-primary); }
-.schedule-time { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--olive-primary); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; background: var(--olive-bg); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
+.schedule-time { font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--olive-primary); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; background: var(--olive-bg); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 4px; white-space: nowrap; }
 .schedule-info { flex: 1; }
+.schedule-date-text { display: inline-flex; align-items: center; gap: 4px; color: var(--text-muted); margin-top: 3px; }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: var(--text-muted); font-size: var(--text-sm); background: var(--bg-card); border-radius: 8px; border: 1px dashed var(--border-light); }
 .panel-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); overflow: hidden; }
 .panel-header { display: flex; align-items: center; gap: 10px; background: var(--bg-card); color: var(--text-primary); font-weight: var(--font-semibold); text-transform: uppercase; font-size: 12px; padding: 12px 16px; letter-spacing: 0.02em; border-bottom: 1px solid var(--border-light); }

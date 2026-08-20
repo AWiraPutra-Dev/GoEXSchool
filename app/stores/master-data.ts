@@ -1,7 +1,11 @@
 import { defineStore } from 'pinia'
 
+export interface StudentAccount {
+  id: string
+  status: 'active' | 'inactive'
+}
 export interface Student {
-  id: string; nis: string; name: string; class: string; gender: string; phone: string | null; accountStatus: 'imported' | 'registered'
+  id: string; nis: string; name: string; class: string; gender: string; phone: string | null; accountStatus: 'imported' | 'registered'; account: StudentAccount | null
 }
 export interface Teacher {
   id: string; nip: string; name: string; subject: string; phone: string | null
@@ -10,7 +14,7 @@ export interface Ekskul {
   id: string; name: string; teacher?: { name: string } | null; _count?: { members: number }; coach?: string; members: number; quota: number; scheduleInfo: string | null; description: string | null; logoUrl?: string | null
 }
 export interface AppUser {
-  id: string; name: string; username: string; role: string; phone: string | null; email: string | null; status: 'active' | 'inactive'; permissions: { permissionId: string }[]; nis?: string | null; class?: string | null; extracurricularId?: string | null; ekskul?: string | null
+  id: string; name: string; username: string; role: string; phone: string | null; email: string | null; status: 'active' | 'inactive'; lastLogin?: string | null; permissions: { permissionId: string }[]; nis?: string | null; class?: string | null; extracurricularId?: string | null; ekskul?: string | null
 }
 
 export const useMasterDataStore = defineStore('masterData', {
@@ -118,6 +122,22 @@ export const useMasterDataStore = defineStore('masterData', {
       this.students = this.students.filter(s => s.id !== id)
     },
 
+    /** Aktifkan/nonaktifkan akun login siswa (dari halaman Data Siswa). */
+    async toggleStudentAccountStatus(studentId: string) {
+      const s = this.students.find(st => st.id === studentId)
+      if (!s?.account) return
+      const newStatus: 'active' | 'inactive' = s.account.status === 'active' ? 'inactive' : 'active'
+      await this.updateUser(s.account.id, { status: newStatus })
+      s.account.status = newStatus
+    },
+
+    /** Reset password akun siswa (hanya bila siswa sudah punya akun). */
+    async resetStudentPassword(studentId: string, password?: string) {
+      const s = this.students.find(st => st.id === studentId)
+      if (!s?.account) throw new Error('Siswa belum memiliki akun login.')
+      return await this.resetUserPassword(s.account.id, password)
+    },
+
     async addTeacher(data: { nip: string; name: string; subject?: string; phone?: string }) {
       const t = await $fetch<Teacher>('/api/admin/teachers', { method: 'POST', body: data })
       this.teachers.push(t)
@@ -134,10 +154,16 @@ export const useMasterDataStore = defineStore('masterData', {
       this.teachers = this.teachers.filter(t => t.id !== id)
     },
 
-    async importStudents(students: Array<{ name: string; class: string; gender: string; phone?: string }>) {
-      const res = await $fetch<{ success: boolean; count: number; students: Student[] }>('/api/admin/students/import', { method: 'POST', body: { students } })
+    /** Import data siswa massal dari file Excel/CSV (template /api/admin/students/template). */
+    async importStudents(file: File) {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await $fetch<{ success: boolean; count: number; errors: Array<{ row: number; message: string }>; students: Student[] }>('/api/admin/students/import', {
+        method: 'POST',
+        body: fd,
+      })
       this.students.push(...res.students)
-      return res.count
+      return res
     },
 
     async addEkskul(data: { name: string; quota?: number; scheduleInfo?: string; description?: string; teacherId?: string; logoUrl?: string | null }) {
@@ -188,6 +214,14 @@ export const useMasterDataStore = defineStore('masterData', {
     async deleteUser(id: string) {
       await $fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
       this.appUsers = this.appUsers.filter(u => u.id !== id)
+    },
+
+    /** Reset password user (admin). Bila password dikirim, dipakai; jika tidak, server membuat sementara. */
+    async resetUserPassword(id: string, password?: string) {
+      return await $fetch<{ success: boolean; username: string; password: string }>(`/api/admin/users/${id}/reset-password`, {
+        method: 'POST',
+        body: { password: password || undefined },
+      })
     }
   }
 })

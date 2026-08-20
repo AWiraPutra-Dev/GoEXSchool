@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   if (!existing) throw createError({ statusCode: 404, message: 'Berita tidak ditemukan.' })
   const scope = await getOperatorScope(event)
   assertScope(scope, existing.extracurricularId)
-  const { title, content, isPublic, extracurricularId, author, displayStatus } = await readBody(event)
+  const { title, content, isPublic, extracurricularId, author, coverImage, displayStatus } = await readBody(event)
   if (extracurricularId) assertScope(scope, extracurricularId)
   // Operator hanya boleh mengajukan (pending) atau menarik pengajuan (none).
   // Status approved/rejected hanya bisa diatur oleh admin.
@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.news.update({
     where: { id },
     data: {
-      title, content, isPublic: !!isPublic, author, extracurricularId,
+      title, content, isPublic: !!isPublic, author, coverImage: coverImage ?? existing.coverImage, extracurricularId,
       ...(displayStatus !== undefined ? { displayStatus } : {}),
     },
   })

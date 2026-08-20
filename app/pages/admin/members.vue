@@ -7,6 +7,13 @@ const master = useMasterDataStore()
 
 onMounted(async () => {
   await Promise.all([op.fetchAll(), master.fetchReference()])
+  // Jika datang dari klik kartu ekskul (mis. /admin/members?ekskul=id),
+  // langsung tampilkan anggota ekskul tersebut.
+  const route = useRoute()
+  const q = route.query.ekskul
+  if (typeof q === 'string' && master.extracurriculars.some(e => e.id === q)) {
+    filter.value = q
+  }
 })
 
 // 'semua' | 'tanpa' | <ekskulId>
@@ -60,9 +67,9 @@ const stats = computed(() => {
 
 function memberStatus(s: { id: string }) {
   const mems = membersByStudent.value[s.id] || []
-  if (!mems.length) return { label: 'Tidak Mengikuti', cls: 'status-none' }
-  if (mems.some(m => m.status === 'active')) return { label: 'Aktif', cls: 'status-active' }
-  return { label: 'Nonaktif', cls: 'status-inactive' }
+  if (!mems.length) return { label: 'Tidak Mengikuti', cls: 'pending' }
+  if (mems.some(m => m.status === 'active')) return { label: 'Aktif', cls: 'active' }
+  return { label: 'Nonaktif', cls: 'inactive' }
 }
 </script>
 
@@ -75,9 +82,9 @@ function memberStatus(s: { id: string }) {
 
     <!-- Ringkasan -->
     <div class="stats-grid">
-      <div class="stat-card"><span class="stat-value" style="color: var(--teal-dark);">{{ stats.total }}</span><span class="stat-label">Total Siswa</span></div>
-      <div class="stat-card"><span class="stat-value" style="color: var(--olive-primary);">{{ stats.ikut }}</span><span class="stat-label">Mengikuti Ekskul</span></div>
-      <div class="stat-card"><span class="stat-value" style="color: var(--orange);">{{ stats.tanpa }}</span><span class="stat-label">Tidak Mengikuti</span></div>
+      <div class="stat-card"><span class="stat-value">{{ stats.total }}</span><span class="stat-label">Total Siswa</span></div>
+      <div class="stat-card"><span class="stat-value">{{ stats.ikut }}</span><span class="stat-label">Mengikuti Ekskul</span></div>
+      <div class="stat-card"><span class="stat-value">{{ stats.tanpa }}</span><span class="stat-label">Tidak Mengikuti</span></div>
     </div>
 
     <div class="table-card">
@@ -111,7 +118,7 @@ function memberStatus(s: { id: string }) {
               <span v-else class="text-[12px]" style="color: var(--text-muted);">-</span>
             </td>
             <td>
-              <span class="status-badge" :class="memberStatus(s).cls">{{ memberStatus(s).label }}</span>
+              <span class="status-dot" :class="memberStatus(s).cls">{{ memberStatus(s).label }}</span>
             </td>
           </tr>
           <tr v-if="!filtered.length">
@@ -127,21 +134,21 @@ function memberStatus(s: { id: string }) {
 <style scoped>
 .page-title { font-size: var(--text-2xl); font-weight: var(--font-bold); color: var(--text-primary); }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
-.stat-card { background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 8px; padding: 16px; text-align: center; }
-.stat-value { display: block; font-size: var(--text-xl); font-weight: var(--font-bold); }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border-light); padding: 14px; text-align: center; }
+.stat-value { display: block; font-size: var(--text-lg); font-weight: var(--font-bold); color: var(--text-primary); }
 .stat-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px; }
-.table-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); overflow: hidden; }
+.table-card { background: var(--bg-card); border: 1px solid var(--border-light); }
 .table-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border-light); gap: 8px; flex-wrap: wrap; }
-.filter-select, .search-input { border: 1px solid var(--border-light); border-radius: 6px; padding: 8px 12px; font-size: var(--text-sm); color: var(--text-primary); background: white; }
+.filter-select, .search-input { border: 1px solid var(--border-light); padding: 7px 10px; font-size: var(--text-sm); color: var(--text-primary); background: white; }
 .search-input { width: 220px; }
-.filter-select:focus, .search-input:focus { outline: none; border-color: var(--olive-primary); box-shadow: 0 0 0 2px rgba(139,148,103,0.15); }
+.filter-select:focus, .search-input:focus { outline: none; border-color: var(--olive-primary); }
 .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
 .data-table th { text-align: left; padding: 10px 16px; font-weight: var(--font-semibold); background: var(--bg-main); color: var(--text-secondary); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.3px; }
 .data-table td { padding: 10px 16px; border-top: 1px solid var(--border-light); vertical-align: middle; }
 .nis-code { font-size: var(--text-xs); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; font-weight: var(--font-medium); color: var(--text-secondary); }
-.ekskul-tag { display: inline-block; font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; background: rgba(139,148,103,0.15); color: var(--olive-primary); font-weight: var(--font-medium); margin: 2px 4px 2px 0; }
-.ekskul-inactive { background: rgba(212,106,90,0.12); color: var(--red-orange); }
-.status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 10px; font-weight: var(--font-medium); white-space: nowrap; }
+.ekskul-tag { display: inline-block; font-size: var(--text-sm); color: var(--text-secondary); margin: 2px 4px 2px 0; }
+.ekskul-inactive { color: var(--red-orange); }
+.status-badge { font-size: var(--text-xs); padding: 2px 10px; border-radius: 4px; font-weight: var(--font-medium); white-space: nowrap; }
 .status-active { background: rgba(74,158,158,0.15); color: var(--teal); }
 .status-inactive { background: rgba(212,106,90,0.15); color: var(--red-orange); }
 .status-none { background: rgba(212,192,137,0.2); color: var(--orange); }

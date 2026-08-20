@@ -16,7 +16,7 @@ const selectedEkskul = computed(() => store.extracurriculars.find(e => e.id === 
     <div>
       <h1 class="page-title">{{ ui.t('menu.board') }}</h1>
       <p class="text-[13px]" style="color: var(--text-secondary);">
-        Atur struktur organisasi setiap ekskul — kartu anggota atau desain gambar (Canva), lengkap dengan pilihan tema.
+        Atur struktur organisasi setiap ekskul, kelola kartu pengurus dan tampilan struktur yang dilihat semua siswa. Warna mengikuti instansi.
       </p>
     </div>
 
@@ -65,7 +65,7 @@ const selectedEkskul = computed(() => store.extracurriculars.find(e => e.id === 
 .ekskul-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
 .picker-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 .meta-chip {
-  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 14px;
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 4px;
   background: var(--accent-soft); color: var(--accent); font-size: var(--text-xs); font-weight: var(--font-medium);
 }
 .empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px; background: var(--bg-card); border: 1px dashed var(--border-light); border-radius: 12px; }
